@@ -1,6 +1,6 @@
 # L4D2_Machine
 
-Provides deployable turrets and gatling guns with 8 different types of ammo:
+Provides smart, deployable turrets and gatling guns with 8 different types of ammo:
 
 - standard
 - tesla
