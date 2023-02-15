@@ -1,12 +1,8 @@
 ﻿"Phrases"
 {
-	"Cal50MachineGun"
-	{
-		"en"	"50 Cal Turret"
-	}
 	"Common Type"
 	{
-		"en"		"You deployed %s with %s ammo!"
+		"en"		"You deployed %s with %s ammunition!"
 	}
 	"Broken Machine Gun"
 	{
@@ -20,6 +16,10 @@
 	{
 		"en"		"Target Reached %i"
 	}
+    "Remove Turret"
+    {
+        "en"        "Remove Turret"
+    }
 	"Ammunition Status"
 	{
 		"en"		"Turret's ammo: %d"
@@ -42,7 +42,7 @@
 	}
 	"Special Type"
 	{
-		"en"		"You deployed %s turret with %s ammo!"
+		"en"		"You deployed %s with %s ammunition!"
 	}
 	"Can't Pick Up"
 	{
@@ -82,7 +82,7 @@
 	}
 	"Model Gatling"
     {	
-        "en"        "Gatling"
+        "en"        "Gatling Gun"
     }
     "Machine Gun Not Allowed"
     {
@@ -106,7 +106,7 @@
 	}
 	"Current Ammo"
 	{
-        "en"        "Turret %d ammunition: %d"
+        "en"        "Turret ammunition: [%d/%d%%]"
 	}
 	"Plugin Restarted"
 	{
@@ -118,7 +118,7 @@
 	}
 	"Machine Gun Limit"
 	{
-		"en"		"You can only deploy maximum %i turrets!"
+		"en"		"You can only deploy maximum %d turrets!"
 	}
 	"Machine Gun Active State" 
 	{
@@ -134,7 +134,7 @@
     }
 	"Fire Type"
 	{
-		"en"		"Flamethrower"
+		"en"		"Fire"
 	}
     "Type Laser"
     {
@@ -154,11 +154,11 @@
     }
 	"Basic Menu"
     {
-        "en"            "Gatling guns (%i/%i)"
+        "en"            "Gatling guns"
     }
     "Advanced Menu"
     {
-        "en"            "Heavy turrets (%i/%i)"
+        "en"            "Heavy turrets"
     }
 	"Main Menu Title"
 	{
@@ -166,11 +166,11 @@
 	}
 	"Gatling Basic Machine Gun"
 	{
-		"en"		"Bullets"
+		"en"		"Standard"
 	}
 	"50 Cal Basic Machine Gun"
 	{
-		"en"		"50 Cal Turrets"
+		"en"		"Heavy Turret"
 	}
 	"Secondary Menu Basic Machine Guns"
 	{
@@ -178,7 +178,7 @@
 	}
 	"Damaged Machine Gun"
 	{
-		"en"		"Your turret has been damaged!"
+		"en"		"Your turret has been destroyed!"
 	}
 	"Secondary Menu Advanced Machine Gun"
 	{
@@ -215,9 +215,13 @@
     {
         "en"	        "Tesla"
     }
+    "Cal50MachineGun"
+	{
+		"en"	"Standard"
+	}
 	"Model 50 Cal"
 	{
-		"en"		"50 Cal"
+		"en"		"Heavy Turret"
 	}
     "50 Cal Tesla-Type"
     {

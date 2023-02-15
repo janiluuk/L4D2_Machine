@@ -109,7 +109,7 @@
 #define REQUIRE_PLUGIN
 
 #if !defined _LMCCore_included
-	native int LMC_GetEntityOverlayModel(int iEntity);
+       native int LMC_GetEntityOverlayModel(int iEntity);
 #endif
 
 static bool	bLMC_Available;
@@ -233,7 +233,7 @@ public APLRes AskPluginLoad2( Handle hMyself, bool bLate, char[] sError, int Err
 		strcopy( sError, Error_Max, "This Plugin only Runs In The \"Left 4 Dead 1/2\" Games!" );
 		return APLRes_SilentFailure;
 	}
-	
+
 	MarkNativeAsOptional("LMC_GetEntityOverlayModel"); // LMC
 	
 	bLeft4DeadTwo = ( Engine == Engine_Left4Dead2 );
@@ -281,6 +281,7 @@ static ConVar hCvar_MachineSpecialAllowed;
 
 static ConVar hCvar_MachineUsageMessage;
 static ConVar hCvar_MachineAmmoCount;
+static ConVar hCvar_MachineAmmoCountGatling;
 static ConVar hCvar_MachineAmmoType;
 
 static ConVar hCvar_MachineBlocking;
@@ -291,7 +292,9 @@ static ConVar hCvar_MachineAllowCarryGatling;
 static ConVar hCvar_MachineAllowUse;
 static ConVar hCvar_MachineSleepTime;
 static ConVar hCvar_MachineFireRate;
+static ConVar hCvar_MachineFireRateGatling;
 static ConVar hCvar_MachineHealth;
+static ConVar hCvar_MachineHealthGatling;
 
 static ConVar hCvar_MachineBetrayChance;
 static ConVar hCvar_MachineLimit;
@@ -309,15 +312,18 @@ static Handle SDKStaggerClient = INVALID_HANDLE;
 static float fCvar_MachineDamageToInfected;
 static float fCvar_MachineDamageToSurvivor;
 static float fCvar_MachineFireRate;
+static float fCvar_MachineFireRateGatling;
 static float fCvar_MachineOverHeat;
 static float fCvar_MachineRange;
 static float fCvar_MachineSleepTime;
 static float fCvar_MachineHealth;
+static float fCvar_MachineHealthGatling;
 static float fCvar_MachineDroppingTime;
 
 static int iCvar_MachineMaxAllowed;
 static int iCvar_MachineUsageMessage;
 static int iCvar_MachineAmmoCount;
+static int iCvar_MachineAmmoCountGatling;
 static int iCvar_MachineAmmoType;
 static int iCvar_MachineAllowCarry;
 static int iCvar_MachineAllowCarryGatling;
@@ -445,8 +451,8 @@ public void OnPluginStart()
 	hCvar_MachineSpecialAllowed 	= CreateConVar("l4d_machine_special_allowed", 		"Basic,Flame,Laser,Tesla,Freeze,Nauseating", "Set types of machine guns allowed", FCVAR_NOTIFY);
 	
 	hCvar_MachineUsageMessage 		= CreateConVar("l4d_machine_usage_message", 		"1", 		"Number of times usage information is shown.\n0 = Disable", FCVAR_NOTIFY, true, 0.0, true, 5.0);
-
-	hCvar_MachineAmmoCount 			= CreateConVar("l4d_machine_ammo_count", 			"1000", 	"Sets the amount of ammo per gun", FCVAR_NOTIFY, true, 100.0, true, 10000.0);
+	hCvar_MachineAmmoCountGatling	= CreateConVar("l4d_machine_ammo_gatling_count",	"1000", 	"Sets the amount of ammo per gun", FCVAR_NOTIFY, true, 100.0, true, 10000.0);
+	hCvar_MachineAmmoCount 			= CreateConVar("l4d_machine_ammo_count", 			"1500", 	"Sets the amount of ammo per gun", FCVAR_NOTIFY, true, 100.0, true, 10000.0);
 	hCvar_MachineAmmoType 			= CreateConVar("l4d_machine_ammo_type", 			"0", 		"Sets ammunition type for bullets.\n0 = Normal Ammo.\n1 = Incendiary Ammo.\n2 = Explosive Ammo.", FCVAR_NOTIFY, true, 0.0, true, 2.0 );
 	hCvar_MachineAmmoReload 		= CreateConVar("l4d_machine_ammo_reload", 			"1", 		"Enable reloading for 50cal turrets.\n0 = Disabled.\n1 = Enabled.", FCVAR_NOTIFY, true, 0.0, true, 1.0 );
 	hCvar_MachineAmmoReloadGatling	= CreateConVar("l4d_machine_ammo_gatling_reload",	"0", 		"Enable reloading for gatling guns.\n0 = Disabled.\n1 = Enabled.", FCVAR_NOTIFY, true, 0.0, true, 1.0 );
@@ -455,11 +461,15 @@ public void OnPluginStart()
 	hCvar_MachineAllowCarryGatling	= CreateConVar("l4d_machine_allow_gatling_carry", 	"0", 		"Allow carrying gatling guns. \n0 = Disabled\n1 = Anyone \n2 = Only owner", FCVAR_NOTIFY, true, 0.0, true, 2.0 );
 	hCvar_MachineAllowUse 			= CreateConVar("l4d_machine_allow_use", 			"1", 		"Allow using the turrets manually.\n0 = Disabled.\n1 = Enabled.", FCVAR_NOTIFY, true, 0.0, true, 1.0 );
 	hCvar_MachineSleepTime 			= CreateConVar("l4d_machine_sleep_time", 			"180.0", 	"Sets the max waiting time(seconds) to remain inactive when there are no enemies in range.", FCVAR_NOTIFY, true, 60.00, true, 600.00);
-	hCvar_MachineFireRate 			= CreateConVar("l4d_machine_fire_rate", 			"6", 		"Sest rate of fire, amount shots per second.", FCVAR_NOTIFY, true, 5.0, true, 30.0);
- 	hCvar_MachineHealth 			= CreateConVar("l4d_machine_health", 				"700", 		"Sets the amount of health for each machine gun.", FCVAR_NOTIFY, true, 50.0, true, 1000.0);
+	hCvar_MachineFireRate 			= CreateConVar("l4d_machine_fire_rate",				"8", 		"Sest rate of fire, amount shots per second.", FCVAR_NOTIFY, true, 5.0, true, 30.0);
+	hCvar_MachineFireRateGatling	= CreateConVar("l4d_machine_gatling_fire_rate", 	"6", 		"Sest rate of fire, amount shots per second.", FCVAR_NOTIFY, true, 5.0, true, 30.0);
+
+ 	hCvar_MachineHealth 			= CreateConVar("l4d_machine_health", 				"1500", 	"Sets the amount of health for each machine gun.", FCVAR_NOTIFY, true, 50.0, true, 1000.0);
+	hCvar_MachineHealthGatling 		= CreateConVar("l4d_machine_health_gatling",			"700", 		"Sets the amount of health for each machine gun.", FCVAR_NOTIFY, true, 50.0, true, 1000.0);
+
 	hCvar_MachineBlocking 	 		= CreateConVar("l4d_machine_blocking", 				"0", 		"If enabled, turrets are solid entities instead of walk-through. \n0 = Disabled.\n1 = Enabled.", FCVAR_NOTIFY, true, 0.0, true, 1.0 );
 	
- 	hCvar_MachineBetrayChance 		= CreateConVar("l4d_machine_betray_chance", 		"15.0",		"Sets the probability of being betrayed by machine guns", FCVAR_NOTIFY, true, 0.0, true, 100.0 );
+ 	hCvar_MachineBetrayChance 		= CreateConVar("l4d_machine_betray_chance", 		"20.0",		"Sets the probability of being betrayed by machine guns", FCVAR_NOTIFY, true, 0.0, true, 100.0 );
 	hCvar_MachineLimit 				= CreateConVar("l4d_machine_limit", 				"1", 		"Maximum turrets per user.", FCVAR_NOTIFY, true, 1.0, true, 16.0);
 	hCvar_MachineLimitGatling		= CreateConVar("l4d_machine_gatling_limit", 		"3", 		"Maximum amount of gatling guns per user", FCVAR_NOTIFY, true, 1.0, true, float( MAX_EACHPLAYER ));	
 	hCvar_MachineMaxAllowed 		= CreateConVar("l4d_machine_max_allowed", 			"8", 		"Maximum total amount of turrets per game", FCVAR_NOTIFY, true, 1.0, true, float( MAX_ALLOWED ) );
@@ -468,7 +478,7 @@ public void OnPluginStart()
 	hCvar_MachineDroppingTime 		= CreateConVar("l4d_machine_dropping_time", 		"0.5", 		"Deployment time for turret in seconds.", FCVAR_NOTIFY, true, 0.5, true, 3.0 );
 //	hCvar_ = CreateConVar("l4d_machine_", "1", "", FCVAR_NOTIFY, true, 0.0, true, 1.0 );
 
- 	AutoExecConfig( true, "l4d2_machine_multi" );
+ 	AutoExecConfig( true, "l4d_machine_multi" );
 	
 	hCvar_MPGameMode.AddChangeHook( ConVarChange );
 	hCvar_Machine_Enabled.AddChangeHook( ConVarChange );
@@ -568,12 +578,16 @@ void GetConVar()
  	fCvar_MachineRange = hCvar_MachineRange.FloatValue;
 	fCvar_MachineSleepTime = hCvar_MachineSleepTime.FloatValue;
 	fCvar_MachineFireRate = hCvar_MachineFireRate.FloatValue;
+	fCvar_MachineFireRateGatling = hCvar_MachineFireRateGatling.FloatValue;	
 	fCvar_MachineHealth = hCvar_MachineHealth.FloatValue;
+	fCvar_MachineHealthGatling = hCvar_MachineHealthGatling.FloatValue;
+
 	fCvar_MachineDroppingTime = hCvar_MachineDroppingTime.FloatValue;
 	
 	iCvar_MachineMaxAllowed = hCvar_MachineMaxAllowed.IntValue;
 	iCvar_MachineUsageMessage = hCvar_MachineUsageMessage.IntValue;
 	iCvar_MachineAmmoCount = hCvar_MachineAmmoCount.IntValue;
+	iCvar_MachineAmmoCountGatling = hCvar_MachineAmmoCountGatling.IntValue;	
 	iCvar_MachineAmmoType = hCvar_MachineAmmoType.IntValue;
 	iCvar_MachineAllowCarry = hCvar_MachineAllowCarry.IntValue;
 	iCvar_MachineAllowCarryGatling = hCvar_MachineAllowCarryGatling.IntValue;	
@@ -889,8 +903,9 @@ public Action Event_EntityShoved( Event hEvent, const char[] sName, bool bDontBr
 		{
 			int iEntity = GetMinigun( attacker );
 			if( iEntity > 0 )
-			{
-				if (canCarryGun(iEntity, attacker)) {
+			{	int index = FindGunIndex(iEntity);
+
+				if (canCarryGun(index, attacker)) {
 					StartCarry( attacker, iEntity );
 				}
 			}
@@ -927,7 +942,8 @@ public Action Event_PlayerUses( Event hEvent, const char[] sName, bool bDontBroa
 				return Plugin_Continue;
 			}
 			PrintHintText( client, "%t", "Reloaded Machine Gun" );
-			GunAmmo[Index] = iCvar_MachineAmmoCount;
+
+			GunAmmo[Index] = isGatlingGun(Index) ? iCvar_MachineAmmoCountGatling : iCvar_MachineAmmoCount;
 		}
 	}
 	
@@ -1204,10 +1220,10 @@ void PrintUserSelection( int client, const int iMachineGunModel, const int iSpec
 	else if( iSpecialType == TYPE_NAUSEATING )
 		Format( sSpecialType, sizeof sSpecialType, "'Green'%T", "Type Nauseating", client );
 	
-	if( iSpecialType )
-		CustomPrintToChat( client, "%s %t", sPluginTag, "Special Type", sMachineGunModel, sSpecialType );
-	else
-		CustomPrintToChat( client, "%s %t", sPluginTag, "Common Type", sMachineGunModel );
+	static char sDeployMsg[128];
+	Format( sDeployMsg, sizeof sDeployMsg, "You deployed  %s with  %s ammunition!", sMachineGunModel, sSpecialType );
+
+	CustomPrintToChat( client, "%s %s", sPluginTag, sDeployMsg); 
 }
 /****************************************************************************************************************************************/
 public Action CMD_MainMenu( int client, int args )
@@ -1224,12 +1240,11 @@ public Action CMD_MainMenu( int client, int args )
 			
 			if( !hasBuildsLeftFor50cal(client) && !hasBuildsLeftForGatling(client))
 			{
-				SendPanelToClient( ShowEmptinessPanel( client ), client, PanelHandler, 15 );
+				//SendPanelToClient( ShowEmptinessPanel( client ), client, PanelHandler, 15 );
 				CustomPrintToChat( client, "%s %t", sPluginTag, "Machine Gun Limit", iCvar_MachineLimit ); 
 			
-			} else {
+			} 
 				BuildMachineGunsMainMenu( client );
-			}
 		}
 	}
 	
@@ -1246,6 +1261,8 @@ void BuildMachineGunsMainMenu( int client )
 
 	static char sBasicMchineGuns[128];
 	static char sAdvancedMachineGuns[128];
+	static char sRemoveMachineGun[128];
+
 	static char sTitle[128];
 	
 	Menu hMenu = new Menu( MenuHandler );
@@ -1253,16 +1270,22 @@ void BuildMachineGunsMainMenu( int client )
 	hMenu.ExitButton = true;
 	
 	if (hasBuildsLeftForGatling(client)) {
-		Format( sBasicMchineGuns, sizeof sBasicMchineGuns, "%T", "Basic Menu", client, countGatlingGuns(client), iCvar_MachineLimitGatling);
+		Format( sBasicMchineGuns, sizeof sBasicMchineGuns, "%T", "Basic Menu", client);
+		Format( sBasicMchineGuns, sizeof sBasicMchineGuns, "%s (%d/%d)",sBasicMchineGuns, countGatlingGuns(client), iCvar_MachineLimitGatling );
+
 		if( AllowAccess( client, sCvar_MachineBasicAdminOnly ) )
 			hMenu.AddItem( "BasicMachineGuns", sBasicMchineGuns );
 	}
 	if (hasBuildsLeftFor50cal(client)) {
 	
-		Format( sAdvancedMachineGuns, sizeof sAdvancedMachineGuns, "%T", "Advanced Menu", client,  count50calGuns(client), iCvar_MachineLimit);
+		Format( sAdvancedMachineGuns, sizeof sAdvancedMachineGuns, "%T", "Advanced Menu", client);
+		Format( sAdvancedMachineGuns, sizeof sAdvancedMachineGuns, "%s (%d/%d)", sAdvancedMachineGuns, count50calGuns(client), iCvar_MachineLimit);		
 		if( AllowAccess( client, sCvar_MachineSpecialAdminOnly ) )
 			hMenu.AddItem( "AdvancedMachineGuns", sAdvancedMachineGuns );
 	}
+	Format( sRemoveMachineGun, sizeof sRemoveMachineGun, "%T", "Remove Turret", client);
+	hMenu.AddItem("RemoveMachineGun", sRemoveMachineGun );
+
 	Format( sTitle, sizeof sTitle, "%T", "Main Menu Title", client );
 	hMenu.SetTitle( sTitle );
 	hMenu.Display( client, MENU_TIME_FOREVER );
@@ -1328,6 +1351,11 @@ public int MenuHandler( Menu hMenu, MenuAction hAction, int Param1, int Param2 )
 			{
 				BuildAdvancedMachineGunsMenu( Param1 );
 			}
+			else if( StrEqual( sInfo, "RemoveMachineGun" ) )
+			{
+
+				CMD_RemoveMachine( Param1, 1 );
+			}			
 		}
 	}
 }
@@ -1516,7 +1544,7 @@ public Action CMD_RemoveMachine( int client, int args )
 		
 		int owner = GunOwner[iIndex];
 		if( owner == client )
-		{
+		{			
 			RemoveMachine( iIndex, client );
 		}
 		else if( IsClientAdmin( client, ADMFLAG_GENERIC ) )
@@ -1990,8 +2018,9 @@ void CreateMachine( int client, int iMachineGunModel, int iSpecialType = NULL )
 		AmmoIndicator[MachineCount] = 0;
 		GunLastCarryTime[MachineCount] = GetEngineTime();
 		
-		GunAmmo[MachineCount] = iCvar_MachineAmmoCount;
-		GunHealth[MachineCount] = fCvar_MachineHealth;
+
+		GunAmmo[MachineCount] = isGatlingGun(MachineCount) ? iCvar_MachineAmmoCountGatling : iCvar_MachineAmmoCount;
+		GunHealth[MachineCount] = isGatlingGun(MachineCount) ? fCvar_MachineHealthGatling : fCvar_MachineHealth;
 		
 		SDKUnhook( Gun[MachineCount], SDKHook_Think,  PreThinkGun );
 		SDKHook( Gun[MachineCount], SDKHook_Think,  PreThinkGun );
@@ -2925,16 +2954,17 @@ void ScanAndShootEnemy( int index, float time, float intervual )
 		{
 			if( time >= GunFireTime[index] && GunAmmo[index] > 0 )
 			{
-				GunFireTime[index] = time + fCvar_MachineFireRate;
+				GunFireTime[index] = time + (isGatlingGun(index) ? fCvar_MachineFireRateGatling : fCvar_MachineFireRate);
 				Shot( client, index, iEntity, GunTeam[index], vPos, vNewMachineAngle );
 				GunAmmo[index]--;
 				AmmoIndicator[index]++;
-				
-				if( AmmoIndicator[index] >= iCvar_MachineAmmoCount / 20.0 )
+				int ammoCount = isGatlingGun(index) ? iCvar_MachineAmmoCountGatling : iCvar_MachineAmmoCount ;
+
+				if( AmmoIndicator[index] >= ammoCount / 20.0 )
 				{
 					AmmoIndicator[index] = 0;
 					if( IsValidClient( client ) ) 
-						CustomPrintToChat( client, "%s %t", sPluginTag, "Current Ammo", GunAmmo[index], RoundFloat( GunAmmo[index] * 100.0 / iCvar_MachineAmmoCount ) );
+						CustomPrintToChat( client, "%s %t", sPluginTag, "Current Ammo", GunAmmo[index], RoundFloat( GunAmmo[index] * 100.0 / ammoCount ) );
 //						PrintCenterText( client, "AMMUNITION STATUS[%d/%d%%]", GunAmmo[index], RoundFloat( GunAmmo[index] * 100.0 / iCvar_MachineAmmoCount ) );
 				}
 				
@@ -3316,10 +3346,12 @@ int isGatlingGun( int index )
 	return false;
 }
 
-bool canCarryGun( int entity, int client) {
- 	
-	int owner = GunOwner[entity];
-	if (isGatlingGun(entity)) {
+bool canCarryGun( int index, int client) 
+{
+ 	if (index < 0 || !IsClientInGame( client ) || !IsPlayerAlive( client ))
+ 		return false;
+	int owner = GunOwner[index];
+	if (isGatlingGun(index)) {
 
 		if (iCvar_MachineAllowCarryGatling == 0) return false;
 		if (iCvar_MachineAllowCarryGatling == 1) return true;
@@ -3329,7 +3361,7 @@ bool canCarryGun( int entity, int client) {
  		return true;
 	}
 	
-	else if (is50calGun(entity)) {
+	else if (is50calGun(index)) {
 
 		if (iCvar_MachineAllowCarry == 0) return false;
 		if (iCvar_MachineAllowCarry == 1) return true;
@@ -3343,6 +3375,8 @@ bool canCarryGun( int entity, int client) {
 
 int countGatlingGuns( int client )
 {
+	if(! IsClientPlaying( client ) ) return 0;
+
 	int count = 0;
 	
 	for(int i = 0; i < MachineCount; i++)
@@ -3352,6 +3386,8 @@ int countGatlingGuns( int client )
 				count++;				
 		}	
 	}
+	PrintToChat(client, "%i gatling found", count);
+
 	return count;
 }
 
@@ -3368,6 +3404,8 @@ int count50calGuns( int client )
 				count++;				
 		}	
 	}
+	PrintToChat(client, "%i turrets found", count);
+
 	return count;
 }
 
