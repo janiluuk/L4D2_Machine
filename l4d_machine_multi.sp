@@ -444,7 +444,7 @@ public void OnPluginStart()
 	hCvar_MPGameMode 				= FindConVar("mp_gamemode");
 	hCvar_Machine_Enabled 			= CreateConVar("l4d_machine_enable", 				"1", 		"Enables/Disables the plugin. 0 = Plugin OFF, 1 = Plugin ON.", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 	hCvar_Machine_FinaleOnly 		= CreateConVar("l4d_machine_finale_only", 			"0", 		"Enables/Disables the use of turrets only in final events.\n0 = OFF.\n1 = ON", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-	hCvar_Machine_SingleTurretMode  = CreateConVar("l4d_machine_single_turret_mode", 	"1",		"Enable classic mode with single carryable turret.\n0 = OFF.\n1 = ON", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	hCvar_Machine_SingleTurretMode  = CreateConVar("l4d_machine_single_turret_mode", 	"0",		"Enable classic mode with single carryable turret.\n0 = OFF.\n1 = ON", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 	hCvar_Machine_GameModesOn 		= CreateConVar("l4d_machine_gamemodes_on",  		"",   		"Turn on the plugin in these game modes, separate by commas (no spaces). (Empty = all).", FCVAR_NOTIFY );
 	hCvar_Machine_GameModesOff 		= CreateConVar("l4d_machine_gamemodes_off", 		"",   		"Turn off the plugin in these game modes, separate by commas (no spaces). (Empty = none).", FCVAR_NOTIFY );
 	hCvar_Machine_GameModesToggle 	= CreateConVar("l4d_machine_gamemodes_toggle", 		"0", 		"Turn on the plugin in these game modes.\n0 = All, 1 = Coop, 2 = Survival, 4 = Versus, 8 = Scavenge.\nAdd numbers together.", FCVAR_NOTIFY, true, 0.0, true, 15.0 );
@@ -464,8 +464,8 @@ public void OnPluginStart()
 	hCvar_MachineAmmoType 			= CreateConVar("l4d_machine_ammo_type", 			"0", 		"Sets ammunition type for bullets.\n0 = Normal Ammo.\n1 = Incendiary Ammo.\n2 = Explosive Ammo.", FCVAR_NOTIFY, true, 0.0, true, 2.0 );
 	hCvar_MachineAmmoReload 		= CreateConVar("l4d_machine_ammo_reload", 			"1", 		"Enable reloading for 50cal turrets.\n0 = Disabled.\n1 = Enabled.", FCVAR_NOTIFY, true, 0.0, true, 1.0 );
 	hCvar_MachineAmmoReloadGatling	= CreateConVar("l4d_machine_ammo_gatling_reload",	"0", 		"Enable reloading for gatling guns.\n0 = Disabled.\n1 = Enabled.", FCVAR_NOTIFY, true, 0.0, true, 1.0 );
-	hCvar_MachineHealth 			= CreateConVar("l4d_machine_health", 				"2000", 	"Sets the amount of health for each machine gun.", FCVAR_NOTIFY, true, 50.0, true, 1000.0);
-	hCvar_MachineHealthGatling 		= CreateConVar("l4d_machine_health_gatling",		"800", 		"Sets the amount of health for each machine gun.", FCVAR_NOTIFY, true, 50.0, true, 1000.0);
+	hCvar_MachineHealth 			= CreateConVar("l4d_machine_health", 				"2000", 	"Sets the amount of health for each turret gun.", FCVAR_NOTIFY, true, 50.0, true, 1000.0);
+	hCvar_MachineHealthGatling 		= CreateConVar("l4d_machine_health_gatling",		"800", 		"Sets the amount of health for each gatling gun.", FCVAR_NOTIFY, true, 50.0, true, 1000.0);
 	hCvar_MachineAllowCarry 		= CreateConVar("l4d_machine_allow_carry", 			"1", 		"Allow carrying 50cal turret around. 0 = Disabled\n1 = Anyone \n2 = Only owner", FCVAR_NOTIFY, true, 0.0, true, 2.0 );
 	hCvar_MachineAllowCarryGatling	= CreateConVar("l4d_machine_allow_carry_gatling", 	"0", 		"Allow carrying gatling guns. \n0 = Disabled\n1 = Anyone \n2 = Only owner", FCVAR_NOTIFY, true, 0.0, true, 2.0 );
 	hCvar_MachineAllowUse 			= CreateConVar("l4d_machine_allow_use", 			"1", 		"Allow using the turrets manually.\n0 = Disabled.\n1 = Enabled.", FCVAR_NOTIFY, true, 0.0, true, 1.0 );
