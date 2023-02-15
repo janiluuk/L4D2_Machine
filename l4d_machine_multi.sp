@@ -3386,7 +3386,7 @@ int countGatlingGuns( int client )
 				count++;				
 		}	
 	}
-	PrintToChat(client, "%i gatling found", count);
+//	PrintToChat(client, "%i gatling found", count);
 
 	return count;
 }
@@ -3404,7 +3404,7 @@ int count50calGuns( int client )
 				count++;				
 		}	
 	}
-	PrintToChat(client, "%i turrets found", count);
+//	PrintToChat(client, "%i turrets found", count);
 
 	return count;
 }
