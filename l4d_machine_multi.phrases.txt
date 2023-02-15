@@ -154,11 +154,11 @@
     }
 	"Basic Menu"
     {
-        "en"            "Gatling guns"
+        "en"            "Gatling gun"
     }
     "Advanced Menu"
     {
-        "en"            "Heavy turrets"
+        "en"            "Portable turret"
     }
 	"Main Menu Title"
 	{
@@ -170,7 +170,7 @@
 	}
 	"50 Cal Basic Machine Gun"
 	{
-		"en"		"Heavy Turret"
+		"en"		"Portable Turret"
 	}
 	"Secondary Menu Basic Machine Guns"
 	{
@@ -221,7 +221,7 @@
 	}
 	"Model 50 Cal"
 	{
-		"en"		"Heavy Turret"
+		"en"		"Portable Turret"
 	}
     "50 Cal Tesla-Type"
     {
