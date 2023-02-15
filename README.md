@@ -20,4 +20,5 @@ Both types explode after getting too much damage.
 Supports classic mode, which simply spawns single portable turret.
 
 Improved enemy detection and logic for prioritising attacks
+
 Highly configurable
