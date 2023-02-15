@@ -5,7 +5,7 @@
 #include <sdktools>
 #include <sdktools_functions>
 #include <sdkhooks>
-
+#define PLUGIN_NAME "[L4D1 AND L4D2] Portable turret & gatling guns."
 #define PLUGIN_VERSION "4.4"
 
 /************************************************************************************************************************/
@@ -103,13 +103,22 @@
 
 #define PI_NUM 3.14159 // PI
 
+public Plugin myinfo =
+{
+	name 		= PLUGIN_NAME,	
+	author 		= "Yani, Ernecio, SilverShot",
+	description = "Deploy portable turrets & gatling guns with different types of ammo. Automatic & Manual control",
+	version 	= PLUGIN_VERSION,
+	url 		= "https://steamcommunity.com/groups/DLRGaming"
+}
+
 /****************************************************/
 #undef REQUIRE_PLUGIN
-#tryinclude <LMCCore>
+#tryinclude <DLRCore>
 #define REQUIRE_PLUGIN
 
-#if !defined _LMCCore_included
-       native int LMC_GetEntityOverlayModel(int iEntity);
+#if !defined _DLRCore_included
+       native int DLR_BuildTurret(int client, float[] vPos);
 #endif
 
 static bool	bLMC_Available;
@@ -120,6 +129,8 @@ int MachineCount = 0;
 static bool bLeft4DeadTwo;
 static bool bMapStarted;
 static bool bFinalEvent;
+static bool g_bLateLoad;
+
 int g_CollisionOffset;
 
 int LaserModelIndex;
@@ -207,56 +218,6 @@ enum
 
 static const char sPluginTag[] = "'Gold'['Green'Turret Info'Gold']'Default'";
 
-public Plugin myinfo =
-{
-	name 		= "[L4D1 AND L4D2] Portable turret & gatling guns.",	
-	author 		= "Yani, Ernecio, SilverShot",
-	description = "Deploy portable turrets & gatling guns with different types of ammo. Automatic & Manual control",
-	version 	= PLUGIN_VERSION,
-	url 		= "https://steamcommunity.com/groups/DLRGaming"
-}
-
-/**
- * Called on pre plugin start.
- *
- * @param hMyself        Handle to the plugin.
- * @param bLate          Whether or not the plugin was loaded "late" (after map load).
- * @param sError         Error message buffer in case load failed.
- * @param Error_Max      Maximum number of characters for error message buffer.
- * @return               APLRes_Success for load success, APLRes_Failure or APLRes_SilentFailure otherwise.
- */
-public APLRes AskPluginLoad2( Handle hMyself, bool bLate, char[] sError, int Error_Max )
-{
-	EngineVersion Engine = GetEngineVersion();
-	if( Engine != Engine_Left4Dead && Engine != Engine_Left4Dead2 )
-	{
-		strcopy( sError, Error_Max, "This Plugin only Runs In The \"Left 4 Dead 1/2\" Games!" );
-		return APLRes_SilentFailure;
-	}
-
-	MarkNativeAsOptional("LMC_GetEntityOverlayModel"); // LMC
-	
-	bLeft4DeadTwo = ( Engine == Engine_Left4Dead2 );
-	return APLRes_Success;
-}
-/******************************************************/
-public void OnAllPluginsLoaded()
-{
-	bLMC_Available = LibraryExists("LMCEDeathHandler");
-}
-
-public void OnLibraryAdded(const char[] sName)
-{
-	if( StrEqual( sName, "LMCEDeathHandler" ) )
-		bLMC_Available = true;
-}
-
-public void OnLibraryRemoved(const char[] sName)
-{
-	if( StrEqual( sName, "LMCEDeathHandler" ) )
-		bLMC_Available = false;
-}
-/******************************************************/
 static ConVar hCvar_MPGameMode;
 static ConVar hCvar_Machine_Enabled;
 static ConVar hCvar_Machine_FinaleOnly;
@@ -285,6 +246,7 @@ static ConVar hCvar_MachineAmmoCountGatling;
 static ConVar hCvar_MachineAmmoType;
 
 static ConVar hCvar_MachineBlocking;
+static ConVar hCvar_MachineGlowRange;
 static ConVar hCvar_MachineAmmoReload;
 static ConVar hCvar_MachineAmmoReloadGatling;
 static ConVar hCvar_MachineAllowCarry;
@@ -322,6 +284,8 @@ static float fCvar_MachineDroppingTime;
 
 static int iCvar_MachineMaxAllowed;
 static int iCvar_MachineUsageMessage;
+static int fCvar_MachineGlowRange;
+
 static int iCvar_MachineAmmoCount;
 static int iCvar_MachineAmmoCountGatling;
 static int iCvar_MachineAmmoType;
@@ -369,6 +333,55 @@ void LoadPluginTranslations()
 	else
 		SetFailState( "Catastrophic failure, translations file not found, file required in \"translations/%s.txt\", please re-download.", TRANSLATION_FILENAME );
 }
+
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
+	EngineVersion test = GetEngineVersion();
+	if( test != Engine_Left4Dead2 )
+	{
+		strcopy(error, err_max, "Plugin only supports Left 4 Dead 2.");
+		return APLRes_SilentFailure;
+	}
+
+	g_bLateLoad = late;
+	RegPluginLibrary("MultiMachine");
+	CreateNative("DLR_Machinemenu", Native_CMD_MainMenu);
+
+	return APLRes_Success;
+}
+
+// ====================================================================================================
+//					NATIVES
+// ====================================================================================================
+int Native_CMD_MainMenu(Handle plugin, int numParams)
+{
+	if( hCvar_Machine_Enabled )
+	{
+		int client = GetNativeCell(1);
+		int type = GetNativeCell(2);
+		CMD_MainMenu(client, type);
+	}
+
+	return 0;
+}
+/******************************************************/
+public void OnAllPluginsLoaded()
+{
+	bLMC_Available = LibraryExists("LMCEDeathHandler");
+}
+
+public void OnLibraryAdded(const char[] sName)
+{
+	if( StrEqual( sName, "LMCEDeathHandler" ) )
+		bLMC_Available = true;
+}
+
+public void OnLibraryRemoved(const char[] sName)
+{
+	if( StrEqual( sName, "LMCEDeathHandler" ) )
+		bLMC_Available = false;
+}
+/******************************************************/
 
 public void OnPluginStart()
 {	
@@ -460,6 +473,7 @@ public void OnPluginStart()
 	hCvar_MachineFireRate 			= CreateConVar("l4d_machine_fire_rate",				"8", 		"Sest rate of fire, amount shots per second.", FCVAR_NOTIFY, true, 5.0, true, 30.0);
 	hCvar_MachineFireRateGatling	= CreateConVar("l4d_machine_fire_rate_gatling", 	"6", 		"Sest rate of fire, amount shots per second.", FCVAR_NOTIFY, true, 5.0, true, 30.0);
 	hCvar_MachineBlocking 	 		= CreateConVar("l4d_machine_blocking", 				"0", 		"If enabled, turrets are solid entities instead of walk-through. \n0 = Disabled.\n1 = Enabled.", FCVAR_NOTIFY, true, 0.0, true, 1.0 );
+	hCvar_MachineGlowRange 			= CreateConVar("l4d_machine_glow_range", 			"25.0",		"Sets the amount of glow the turret produces", FCVAR_NOTIFY, true, 0.0, true, 100.0);
  	hCvar_MachineBetrayChance 		= CreateConVar("l4d_machine_betray_chance", 		"20.0",		"Sets the probability of being betrayed by machine guns", FCVAR_NOTIFY, true, 0.0, true, 100.0 );
 	hCvar_MachineLimit 				= CreateConVar("l4d_machine_limit", 				"1", 		"Maximum turrets per user.", FCVAR_NOTIFY, true, 1.0, true, 16.0);
 	hCvar_MachineLimitGatling		= CreateConVar("l4d_machine_gatling_limit", 		"2", 		"Maximum amount of gatling guns per user", FCVAR_NOTIFY, true, 1.0, true, float( MAX_EACHPLAYER ));	
@@ -571,11 +585,11 @@ void GetConVar()
 	fCvar_MachineFireRateGatling = hCvar_MachineFireRateGatling.FloatValue;	
 	fCvar_MachineHealth = hCvar_MachineHealth.FloatValue;
 	fCvar_MachineHealthGatling = hCvar_MachineHealthGatling.FloatValue;
-
+	fCvar_MachineGlowRange = hCvar_MachineGlowRange.FloatValue;
 	fCvar_MachineDroppingTime = hCvar_MachineDroppingTime.FloatValue;
 	
 	iCvar_MachineMaxAllowed = hCvar_MachineMaxAllowed.IntValue;
-	iCvar_MachineUsageMessage = hCvar_MachineUsageMessage.IntValue;
+	iCvar_MachineUsageMessage = hCvar_MachineUsageMessage.IntValue;	
 	iCvar_MachineAmmoCount = hCvar_MachineAmmoCount.IntValue;
 	iCvar_MachineAmmoCountGatling = hCvar_MachineAmmoCountGatling.IntValue;	
 	iCvar_MachineAmmoType = hCvar_MachineAmmoType.IntValue;
@@ -1205,7 +1219,7 @@ void PrintUserSelection( int client, const int iMachineGunModel, const int iSpec
 	else if( iSpecialType == TYPE_NAUSEATING )
 		Format( sSpecialType, sizeof sSpecialType, "'Green'%T", "Type Nauseating", client );
 	if (iSpecialType < 0) {
-		Format( sSpecialType, sizeof sSpecialType, "'Gold'%T", "Cal50MachineGun", client );
+		Format( sSpecialType, sizeof sSpecialType, "'Gold'%T", "50 Cal Normal", client );
 	}
 
 	static char sDeployMsg[128];
@@ -1345,10 +1359,10 @@ public int MenuHandler( Menu hMenu, MenuAction hAction, int Param1, int Param2 )
 			}
 			else if( StrEqual( sInfo, "RemoveMachineGun" ) )
 			{
-
 				CMD_RemoveMachine( Param1, 1 );
 			}			
 		}
+
 	}
 }
 
@@ -1444,9 +1458,9 @@ void BuildAdvancedMachineGunsMenu( int client )
 	
 	Menu hMenu = new Menu( MenuHandler_AdvancedMachineGuns );
 
-	Format( sBuffer, sizeof sBuffer, "%T", "Cal50MachineGun", client );
+	Format( sBuffer, sizeof sBuffer, "%T", "50 Cal Normal", client );
 	if( bBasicAllowed )
-		hMenu.AddItem( "Cal50MachineGun", sBuffer );
+		hMenu.AddItem( "50 Cal Normal", sBuffer );
 	
 	Format( sBuffer, sizeof sBuffer, "%T", "50 Cal Fire-Type", client );
 	if( bFlameAllowed )
@@ -1788,7 +1802,7 @@ void ScanEnemys()
 		InfectedCount = 0;
 
 	for(int i = 1; i <= MaxClients; i ++ )
-		if( IsClientInGame( i ) && IsPlayerAlive( i ))
+		if( IsClientInGame( i ) && IsPlayerAlive( i ) && !IsPlayerGhost( i ))
 			InfectedsArray[InfectedCount++] = i;
 	
 	int entity = -1;
@@ -2223,9 +2237,12 @@ int SpawnMiniGun( int client, int index, int iMachineGunModel, int iSpecialType 
 	
 	MachineGunSpawned[iCountIndex] = EntIndexToEntRef( iEntity );
 	
-	DispatchKeyValueFloat(iEntity, "MaxPitch",  45.00);
-	DispatchKeyValueFloat(iEntity, "MinPitch", -45.00);
-	DispatchKeyValueFloat(iEntity, "MaxYaw", 90.00);
+	//DispatchKeyValueFloat(iEntity, "MaxPitch",  45.00);
+	//DispatchKeyValueFloat(iEntity, "MinPitch", -45.00);
+	//DispatchKeyValueFloat(iEntity, "MaxYaw", 90.00);
+	DispatchKeyValueFloat(iEntity, "MaxPitch", 360.00);
+	DispatchKeyValueFloat(iEntity, "MinPitch", -360.00);
+	DispatchKeyValueFloat(iEntity, "MaxYaw", 90.00);	
 	DispatchSpawn(iEntity);
 	
 	if (bCvar_MachineBlocking != true)
@@ -2300,8 +2317,7 @@ void StartCarry(int client, int iEntity)
 		SetVector(ang, 0.0, 0.0, 90.0);
 		float pos[3];
 		SetVector(pos, -5.0, 20.0,  0.0);
-		if(GetClientTeam(client)==2)	AttachEntity(client, iEntity, "medkit", pos, ang);
-		else AttachEntity(client, iEntity, "medkit", pos, ang);
+		AttachEntity(client, iEntity, "medkit", pos, ang);
 
 		LastButton[index] = 0;
 		PressTime[index] = 0.0;
@@ -2555,7 +2571,7 @@ public void OnTakeDamagePost( int victim, int attacker, int inflictor, float dam
 			GunScanIndex[index] = 0;
 			GunFireTotolTime[index] = 0.0;
 			GunTeam[index] = 3;
-			GunHealth[index] = fCvar_MachineHealth;
+			GunHealth[index] = isGatlingGun(index) ? fCvar_MachineHealthGatling : fCvar_MachineHealth;
 			
 			if( bAttackerIsPlayer ) 
 				GunUser[index] = attacker;
@@ -2575,7 +2591,7 @@ public void OnTakeDamagePost( int victim, int attacker, int inflictor, float dam
 			GunScanIndex[index] = 0;
 			GunFireTotolTime[index] = 0.0;
 			GunTeam[index] = 2;
-			GunHealth[index] = fCvar_MachineHealth;
+			GunHealth[index] = isGatlingGun(index) ? fCvar_MachineHealthGatling : fCvar_MachineHealth;
 			
 			if( bAttackerIsPlayer ) 
 				GunUser[index] = attacker;
@@ -2594,7 +2610,7 @@ public void OnTakeDamagePost( int victim, int attacker, int inflictor, float dam
 			GunEnemy[index] = 0;
 			GunScanIndex[index] = 0;
 			GunFireTotolTime[index] = 0.0;
-			GunHealth[index] = fCvar_MachineHealth;
+			GunHealth[index] = isGatlingGun(index) ? fCvar_MachineHealthGatling : fCvar_MachineHealth;
 			
 			if( bAttackerIsPlayer ) 
 				GunUser[index] = attacker;
@@ -3050,7 +3066,7 @@ int IsEnemyVisible( int iEntity, int iNewTarget, float vStartingPos[3], float vE
 		}
 		else if( iTeam == 3 )
 		{
-			if( IsInfected( target ) || IsWitch( target ) )
+			if( (IsInfected( target ) || IsWitch( target )) && !IsPlayerGhost(target))
 				return target;
 			else 
 				return 0;
@@ -3176,7 +3192,8 @@ void Shot( int client, int index, int iEntity, int iTeam, float vMachinePosition
 		
 		if( !MachineGunTypes[iEntity] || (MachineGunTypes[iEntity] == TYPE_NAUSEATING && bSpecialBulletsAllowed[iEntity] == false) )
 			L4D_TE_Create_Particle( bLeft4DeadTwo ? vMachinePosition : vTargetPosition, bLeft4DeadTwo ? vTargetPosition : vMachinePosition, GunType[index] == 1 ? iParticleTracer_Gatling : iParticleTracer_50Cal );
-			ShowTrack( GunType[index], vMachinePosition, vTargetPosition ); 						
+			
+		ShowTrack( GunType[index], vMachinePosition, vTargetPosition ); 						
 		
 		if( GunType[index] == MACHINE_50CAL && bAllowSound[iEntity] == false ) 
 			EmitSoundToAll( SOUND_SHOOT_50CAL, 0, SNDCHAN_WEAPON, SNDLEVEL_NORMAL, SND_NOFLAGS, 1.0, SNDPITCH_NORMAL, -1, vMachinePosition, NULL_VECTOR, true, 0.0 );
@@ -3274,6 +3291,10 @@ stock bool IsMeleeAttack( int client )
 	
 	return false;
 }
+
+#if !defined _LMCCore_included
+	native int LMC_GetEntityOverlayModel(int iEntity);
+#endif
 
 /********************************************************************************************************************************************************/
 stock bool IsMiniGun( int entity )
@@ -4419,7 +4440,7 @@ stock void StartGlowing( int entity, int TeamIndex )
 	switch( MachineGunTypes[entity] )
 	{
 		case TYPE_FLAME: sColor = GetColorIndex( 5 );
-		case TYPE_LASER: sColor = GetColorIndex( 1 );
+		case TYPE_LASER: sColor = GetColorIndex( 4 );
 		case TYPE_TESLA: sColor = GetColorIndex( 11 );
 		case TYPE_FREEZE: sColor = GetColorIndex( 3 );
 		case TYPE_NAUSEATING: sColor = GetColorIndex( 10 );
@@ -4434,8 +4455,8 @@ stock void StartGlowing( int entity, int TeamIndex )
 	
 	SetEntProp( entity, Prop_Send, "m_iGlowType", 3 ); 
 	SetEntProp( entity, Prop_Send, "m_bFlashing", 0 );
-	SetEntProp( entity, Prop_Send, "m_nGlowRange", 10000 );
-	SetEntProp( entity, Prop_Send, "m_nGlowRangeMin", 90 );
+	SetEntProp( entity, Prop_Send, "m_nGlowRange", fCvar_MachineGlowRange );
+	SetEntProp( entity, Prop_Send, "m_nGlowRangeMin", 1 );
 	SetEntProp( entity, Prop_Send, "m_glowColorOverride", iColor );
 //	AcceptEntityInput( entity, "StartGlowing" );
 }

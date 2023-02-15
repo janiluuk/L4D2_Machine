@@ -1,4 +1,4 @@
-﻿"Phrases"
+"Phrases"
 {
 	"Common Type"
 	{
@@ -16,10 +16,10 @@
 	{
 		"en"		"Target Reached %i"
 	}
-    "Remove Turret"
-    {
-        "en"        "Remove Turret"
-    }
+	"Remove Turret"
+	{
+		"en"  "Remove Turret"
+	}
 	"Ammunition Status"
 	{
 		"en"		"Turret's ammo: %d"
@@ -38,7 +38,7 @@
 	}
 	"Finished Ammunition"
 	{
-		"en"		"Turret is out of ammo. Refill by using it!"
+		"en"		"Turret is out of ammo. Refill by using it with ammo pack!"
 	}
 	"Special Type"
 	{
@@ -70,7 +70,7 @@
 	}
 	"Admin Removed Entity"
 	{
-        "en"	    "Admin removed turret"
+  		"en"		"Admin removed turret"
 	}
 	"Use Instructor"
 	{
@@ -81,13 +81,13 @@
 		"en"		"No access to this"
 	}
 	"Model Gatling"
-    {	
-        "en"        "Gatling Gun"
-    }
-    "Machine Gun Not Allowed"
-    {
-    	"en"		"Turrets are not allowed to spawn"
-    }
+	{	
+		"en"	"Gatling Gun"
+	}
+	"Machine Gun Not Allowed"
+	{
+		"en"		"Turrets are not allowed to spawn"
+	}
 	"Reload Machine Gun"
 	{
 		"en"		"Your turret is out of ammo, please refill"
@@ -106,7 +106,7 @@
 	}
 	"Current Ammo"
 	{
-        "en"        "Turret ammunition: [%d/%d%%]"
+		"en"	"Turret ammunition: [%d/%d%%]"
 	}
 	"Plugin Restarted"
 	{
@@ -126,47 +126,47 @@
 	}
 	"Machine Gun Betrays Infected"
 	{
-		"en"		"Turret was turned against survivors!"
+		"en"		"Turret control was restored!"
 	}
 	"Machine Gun Betrays Survivors"
-    {
-        "en" 		"Turret control was restored to survivors!"
-    }
+	{
+		"en" 		"Turret was turned against survivors, \nSHOVE the turret to restore control!"
+	}
 	"Fire Type"
 	{
-		"en"		"Fire"
+		"en"	"Fire"
 	}
-    "Type Laser"
-    {
-        "en"            "Laser"
-    }
-    "Type Tesla"
-    {
-        "en"            "Tesla"
-    }
-    "Type Freeze"
+	"Type Laser"
 	{
-        "en"            "Freezing"
-    }
-    "Type Nauseating"
-    {
-        "en"            "Nauseating"
-    }
+		"en"		"Laser"
+	}
+	"Type Tesla"
+	{
+		"en"		"Tesla"
+	}
+	"Type Freeze"
+	{
+		"en"		"Freezing"
+	}
+	"Type Nauseating"
+	{
+		"en"		"Nauseating"
+	}
 	"Basic Menu"
-    {
-        "en"            "Gatling gun"
-    }
-    "Advanced Menu"
-    {
-        "en"            "Portable turret"
-    }
+	{
+		"en"		"Gatling gun"
+	}
+	"Advanced Menu"
+	{
+		"en"		"Portable turret"
+	}
 	"Main Menu Title"
 	{
 		"en"		"Choose type"
 	}
 	"Gatling Basic Machine Gun"
 	{
-		"en"		"Standard"
+		"en"		"Gatling gun"
 	}
 	"50 Cal Basic Machine Gun"
 	{
@@ -196,56 +196,55 @@
 	{
 		"en"		"%N was frozen!"
 	}
-	
-    "Gatling Laser-Type"
-    {
-   		"en"	        "Laser"
-    }
-    "Gatling Freeze-Type"
-    {
-
-        "en"	        "Freezing"
-    }
-    "Gatling Nauseating-Type"
-    {
-
-        "en"	        "Nauseating"
-    }	
-    "Gatling Tesla-Type"
-    {
-        "en"	        "Tesla"
-    }
-    "Cal50MachineGun"
+	"Gatling Laser-Type"
 	{
-		"en"	"Standard"
+   		"en"		"Laser"
+	}
+	"Gatling Freeze-Type"
+	{
+
+		"en"		"Freezing"
+	}
+	"Gatling Nauseating-Type"
+	{
+
+		"en"		"Nauseating"
+	}	
+	"Gatling Tesla-Type"
+	{
+		"en"		"Tesla"
+	}
+	"50 Cal Normal"
+	{
+		"en"		"Normal"
 	}
 	"Model 50 Cal"
 	{
 		"en"		"Portable Turret"
 	}
-    "50 Cal Tesla-Type"
-    {
+	"50 Cal Tesla-Type"
+	{
 
-        "en"	        "Tesla"
-    }
-    "50 Cal Freeze-Type"
-    {
+		"en"		"Tesla"
+	}
+	"50 Cal Freeze-Type"
+	{
 
-        "en"	        "Freezing"
-    }
-    "50 Cal Fire-Type"
-    {
+		"en"		"Freezing"
+	}
+	"50 Cal Fire-Type"
+	{
 
-        "en"	        "Fire"
-    }
-    "50 Cal Laser-Type"
-    {
+		"en"		"Fire"
+	}
+	"50 Cal Laser-Type"
+	{
 
-        "en"	        "Laser"
-    }
-    "Cal 50 Nauseating-Type"
-    {
+		"en"	  "Laser"
+	}
+	"Cal 50 Nauseating-Type"
+	{
 
-        "en"	        "Nauseating"
-    }
+		"en"	  "Nauseating"
+	}
 }
