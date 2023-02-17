@@ -100,14 +100,15 @@
 #define TYPE_NAUSEATING 5 
 
 #define TRANSLATION_FILENAME 	"l4d_machine_multi.phrases" 
+#define PLUGIN_SKILL_NAME "MultiMachine"
 
 #define PI_NUM 3.14159 // PI
 
 public Plugin myinfo =
 {
 	name 		= PLUGIN_NAME,	
-	author 		= "Yani, Ernecio, SilverShot",
-	description = "Deploy portable turrets & gatling guns with different types of ammo. Automatic & Manual control",
+	author 	= "Yani, Ernecio, SilverShot",
+	description 	= "Deploy portable turrets & gatling guns with different types of ammo. Automatic & Manual control",
 	version 	= PLUGIN_VERSION,
 	url 		= "https://steamcommunity.com/groups/DLRGaming"
 }
@@ -118,7 +119,7 @@ public Plugin myinfo =
 #define REQUIRE_PLUGIN
 
 #if !defined _DLRCore_included
-       native int DLR_BuildTurret(int client, float[] vPos);
+       native int DLR_Multiturret(int client, float[] vPos);
 #endif
 
 static bool	bLMC_Available;
@@ -126,16 +127,17 @@ static bool	bLMC_Available;
 
 int MachineCount = 0;
 
+GlobalForward g_DeathForward;
+
 static bool bLeft4DeadTwo;
 static bool bMapStarted;
 static bool bFinalEvent;
 static bool g_bLateLoad;
 
 int g_CollisionOffset;
-
 int LaserModelIndex;
-int	iParticleTracer_Gatling; 	
-int	iParticleTracer_50Cal; 		
+int iParticleTracer_Gatling; 	
+int iParticleTracer_50Cal; 		
 int InfectedsArray[EnemyArraySize];
 int InfectedCount;
 
@@ -344,22 +346,27 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	}
 
 	g_bLateLoad = late;
-	RegPluginLibrary("MultiMachine");
-	CreateNative("DLR_Machinemenu", Native_CMD_MainMenu);
-
+	RegPluginLibrary(PLUGIN_SKILL_NAME);
+	CreateNative("DLR_Multiturret", Native_DLR_Multiturret);
+	MarkNativeAsOptional("OnPlayerUsedSpecialSkill");
+	MarkNativeAsOptional("OnPlayerClassChange");
 	return APLRes_Success;
 }
+
+// Optional native from L4D2 Airstrike
+native void OnSpecialSkillSuccess(int client, char[] skillName);
+native void OnSpecialSkillFail(int client, char[] skillName, char[] reason);
 
 // ====================================================================================================
 //					NATIVES
 // ====================================================================================================
-int Native_CMD_MainMenu(Handle plugin, int numParams)
+int Native_DLR_Multiturret(Handle plugin, int numParams)
 {
 	if( hCvar_Machine_Enabled )
 	{
 		int client = GetNativeCell(1);
 		int type = GetNativeCell(2);
-		CMD_MainMenu(client, type);
+		BuildMachineGunsMainMenu(client);
 	}
 
 	return 0;
@@ -415,18 +422,6 @@ public void OnPluginStart()
 	
 	g_CollisionOffset = FindSendPropInfo( "CBaseEntity", "m_CollisionGroup" );
 
-	// ShoveSurvivor
-/*	StartPrepSDKCall(SDKCall_Player);
-	
-	if(!PrepSDKCall_SetSignature( SDKLibrary_Server, bLeft4DeadTwo ? "\x55\x8B\xEC\x81\xEC\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x53\x8B\x5D\x08\x56\x57\x8B\x7D\x0C\x8B\xF1" : "\x81\xEC\x2A\x2A\x2A\x2A\x56\x8B\xF1\xE8\x2A\x2A\x2A\x2A\x84\xC0\x0F\x2A\x2A\x2A\x2A\x2A\x8B\x8C\x2A\x2A\x2A\x2A\x2A\x85\xC9\x74", bLeft4DeadTwo ? 30 : 32 ) ) // Cargar En Windows
-		PrepSDKCall_SetSignature( SDKLibrary_Server, "@_ZN13CTerrorPlayer18OnShovedBySurvivorEPS_RK6Vector", 0 );
-	
-	PrepSDKCall_AddParameter(SDKType_CBasePlayer, SDKPass_Pointer);
-	PrepSDKCall_AddParameter(SDKType_Vector, SDKPass_ByRef);
-	SDKShoveSurvivor = EndPrepSDKCall();
-	if( SDKShoveSurvivor == null )
-		PrintToServer("Unable to find the 'CTerrorPlayer::OnShovedBySurvivor' signature.");
-*/	
 	// Stagger
 	StartPrepSDKCall(SDKCall_Player);
 	
@@ -814,24 +809,17 @@ public void OnMapStart()
 	PrecacheModel( MODEL_PIPEBOMB, true );
 	PrecacheModel( MODEL_MINIGUN_GATLING, true );
 	PrecacheModel( MODEL_MINIGUN_50CAL, true );
-	
 	PrecacheModel( bLeft4DeadTwo ? MODEL_ANOMALY_LASER_L4D2 : MODEL_ANOMALY_LASER_L4D1, true );
-	
 	PrecacheModel( MODEL_CRATE, true );
 	PrecacheModel( MODEL_GASCAN, true );
-	
 	PrecacheModel( MODEL_MUZZLEFLASH, true );
-
 	PrecacheSound( SOUND_SHOOT_50CAL, true );
 	PrecacheSound( SOUND_IMPACT_FLESH, true );
 	PrecacheSound( SOUND_IMPACT_CONCRETE, true );
-	
 	PrecacheSound( SOUND_EXPLODE3, true );
 	PrecacheSound( SOUND_EXPLODE4, true );
 	PrecacheSound( SOUND_EXPLODE5, true );
-	
 	PrecacheSound( SOUND_FREEZER, true );
-	
 	PrecacheSound( bLeft4DeadTwo ? SOUND_FIRE_L4D2 : SOUND_FIRE_L4D1, true );
 	
 	for( int i = 0; i < sizeof sArraySoundsZap; i ++ )
@@ -841,22 +829,17 @@ public void OnMapStart()
 	PrecacheParticle( PARTICLE_FIRE2 );
 	PrecacheParticle( PARTICLE_FIRE3 );
 	PrecacheParticle( PARTICLE_EMBERS );
-	
 	PrecacheParticle( PARTICLE_TES1 );
 	PrecacheParticle( PARTICLE_TES2 );
 	PrecacheParticle( PARTICLE_TES3 );
 	
 //	PrecacheParticle( PARTICLE_SMOKE );
 	PrecacheParticle( PARTICLE_WATER );
-	
 	PrecacheParticle( PARTICLE_VOMIT );
-	
 	PrecacheParticle( PARTICLE_MUZZLE_FLASH );
-	
 	PrecacheParticle( PARTICLE_WEAPON_TRACER_GATLING );
 	PrecacheParticle( PARTICLE_WEAPON_TRACER_50CAL );
 	PrecacheParticle( PARTICLE_BLOOD );
-	
 	PrecacheParticle( PARTICLE_GAS_EXPLOTION );
 //	PrecacheParticle( PARTICLE_MOLOTOV_EXPLOTION );
 //	PrecacheParticle( PARTICLE_MOLOTOV_EXPLOTION_BRANCH );
@@ -874,11 +857,9 @@ public void OnMapEnd()
 	bMapStarted = false;
 }
 
-
 //////////////////////////////////////////////
 // Events
 /////////////////////////////////////////////
-
 
 public void Event_StartEnd( Event hEvent, const char[] sName, bool bDontBroadcast )
 {
@@ -1089,6 +1070,7 @@ public Action CMD_SpawnMachine( int client, int args )
 		{
 			CustomPrintToChat( client, "%s %t", sPluginTag, "Machine Gun Limit", iCvar_MachineLimit );
 			PrintHintText(client, "You have no turrets left");
+
 			return Plugin_Handled;
 		}
 		
@@ -1768,27 +1750,7 @@ int GetDistanceDamageType( const float vStartingPos[3], const float vEndPos[3] )
 stock void HurtTarget( int attacker, float fDamage, int DMG_TYPE = DMG_GENERIC, int victim )
 {
 	if( victim > 0 )
-	{
-/*		char sDamage[16];
-		char sDMG_TYPE[16];
-		FloatToString( fDamage, sDamage, sizeof( sDamage ) );
-		IntToString( DMG_TYPE, sDMG_TYPE, sizeof( sDMG_TYPE ) );
-		
-		int PointHurt = CreateEntityByName( "point_hurt" );
-		if( PointHurt )
-		{
-			DispatchKeyValue( victim, "targetname", "hurtme" );
-			DispatchKeyValue( PointHurt, "DamageTarget", "hurtme" );
-			DispatchKeyValue( PointHurt, "Damage", sDamage );
-			DispatchKeyValue( PointHurt, "DamageType", sDMG_TYPE );
-			DispatchKeyValue( PointHurt, "classname", "weapon_rifle" );
-			DispatchSpawn( PointHurt );
-			AcceptEntityInput( PointHurt, "Hurt", attacker > 0 ? attacker : -1 );
-			DispatchKeyValue( PointHurt, "classname", "point_hurt" );
-			DispatchKeyValue( victim, "targetname", "donthurtme" );
-			RemoveEdict( PointHurt );
-		}
-*/		
+	{		
 		int inflictor = attacker;
 		SDKHooks_TakeDamage( victim, inflictor < 0 ? 0 : inflictor, attacker <= 0 ? -1 : attacker, fDamage, DMG_TYPE ); 
 	}
@@ -1951,6 +1913,13 @@ bool IsFinale()
 	
 	return false;
 }
+
+void DeployFailed()
+{
+	
+	
+
+}
 /****************************************************************************************************************************************/
 void CreateMachine( int client, int iMachineGunModel, int iSpecialType = NULL )
 {
@@ -1962,7 +1931,10 @@ void CreateMachine( int client, int iMachineGunModel, int iSpecialType = NULL )
 	
 	if( MachineCount >= iCvar_MachineMaxAllowed )
 	{
-		CustomPrintToChat( client, "%s %t", sPluginTag, "Too Many Machine Guns", MachineCount, iCvar_MachineMaxAllowed );
+		char reason[128];
+		Format(reason, sizeof(reason), "%t", "Too Many Machine Guns",	MachineCount, iCvar_MachineMaxAllowed );
+		OnSpecialSkillFail(client, PLUGIN_SKILL_NAME, reason );
+		CustomPrintToChat( client, "%s", reason );
 		return;
 	}
 
@@ -2038,7 +2010,6 @@ void CreateMachine( int client, int iMachineGunModel, int iSpecialType = NULL )
 		if( ShowMsg[client] < iCvar_MachineUsageMessage )
 		{
 			ShowMsg[client]++;
-			
 			DataPack hPack = new DataPack();
 			hPack.WriteCell( GetClientUserId( client ) );
 			hPack.WriteCell( EntIndexToEntRef( iEntity ) );
@@ -2047,6 +2018,7 @@ void CreateMachine( int client, int iMachineGunModel, int iSpecialType = NULL )
 		}
 
 		MachineCount++;
+		OnSpecialSkillSuccess(client, PLUGIN_SKILL_NAME);
 
 		SDKUnhook( iEntity, SDKHook_OnTakeDamagePost, OnTakeDamagePost );
 		SDKHook( iEntity, SDKHook_OnTakeDamagePost, OnTakeDamagePost );
@@ -2666,9 +2638,8 @@ public Action OnPlayerRunCmd( int client, int &buttons, int &impulse, float vel[
 	for(int i = 0; i < MAX_ALLOWED; i++ )
 	{
 		int entity = MachineGunSpawned[i];
-		if( IsValidEntRef( entity ) )
-			if( EntRefToEntIndex( entity ) == iUsingEntity )
-				bIsSpawnedMachine = true;
+		if( IsValidEntRef( entity ) && EntRefToEntIndex( entity ) == iUsingEntity)
+			bIsSpawnedMachine = true;
 	}
 	
 	if( bIsSpawnedMachine != true )
@@ -2808,7 +2779,6 @@ void ScanAndShootEnemy( int index, float time, float intervual )
 	int client = GunUser[index];
 	if( !IsValidClient( client ) )
 		client = 0;	
-/***********************************************************/
 	int iUsingEntity;
 	bool bBlockAutoFire = false;
 	
@@ -2827,7 +2797,7 @@ void ScanAndShootEnemy( int index, float time, float intervual )
 	
 	if( bBlockAutoFire )
 		return;
-/***********************************************************/
+
 	if( bExistingEntity == false || Broken[index] )
 	{
 		if( IsValidClient( client ) )
@@ -2895,7 +2865,7 @@ void ScanAndShootEnemy( int index, float time, float intervual )
 	AddVectors(vPos, vTemp ,vPos);
 
 	int newenemy = GunEnemy[index];
-	if( IsValidEnemy( newenemy, GunTeam[index] ) )
+	if( IsValidEnemy( newenemy, GunTeam[index] ))
 		newenemy = IsEnemyVisible( iEntity, newenemy, vPos, vTargetPosition, vShotAngle, GunTeam[index] );
 	else 
 		newenemy = 0;
@@ -3139,7 +3109,6 @@ void Shot( int client, int index, int iEntity, int iTeam, float vMachinePosition
 			if( MachineGunTypes[iEntity] != TYPE_FLAME )
 				EmitSoundToAll( SOUND_IMPACT_FLESH, 0, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_NOFLAGS, 1.0, SNDPITCH_NORMAL, -1, vTargetPosition, NULL_VECTOR, true, 0.0 );
 		
-/****************************************************************************************************************************/		
 			if( MachineGunTypes[iEntity] == TYPE_FLAME )
 			{
 				CreateEffects( iEntity );
@@ -3185,7 +3154,6 @@ void Shot( int client, int index, int iEntity, int iTeam, float vMachinePosition
 				
 			CreateSparks( vTargetPosition );
 		}
-/****************************************************************************************************************************/
 		
 		if( !MachineGunTypes[iEntity] || MachineGunTypes[iEntity] == TYPE_LASER || (MachineGunTypes[iEntity] == TYPE_NAUSEATING && bSpecialBulletsAllowed[iEntity] == false) )
 			DisplayParticle( iEntity, PARTICLE_MUZZLE_FLASH, vMachinePosition, vAng, 0.0, true ); 	
@@ -3196,8 +3164,7 @@ void Shot( int client, int index, int iEntity, int iTeam, float vMachinePosition
 		ShowTrack( GunType[index], vMachinePosition, vTargetPosition ); 						
 		
 		if( GunType[index] == MACHINE_50CAL && bAllowSound[iEntity] == false ) 
-			EmitSoundToAll( SOUND_SHOOT_50CAL, 0, SNDCHAN_WEAPON, SNDLEVEL_NORMAL, SND_NOFLAGS, 1.0, SNDPITCH_NORMAL, -1, vMachinePosition, NULL_VECTOR, true, 0.0 );
-/****************************************************************************************************************************/			
+			EmitSoundToAll( SOUND_SHOOT_50CAL, 0, SNDCHAN_WEAPON, SNDLEVEL_NORMAL, SND_NOFLAGS, 1.0, SNDPITCH_NORMAL, -1, vMachinePosition, NULL_VECTOR, true, 0.0 );			
 	}
 	
 	delete hTrace;
@@ -3912,7 +3879,6 @@ void MakeEnvSteam(int target, const float vPos[3], const float vAng[3], const ch
 
 public void FreezeTargets( int entity )
 {	
-//	Pos/Ang De La Entidad.
 	static float vPos[3];
 	static float vAng[3];
 	
@@ -3935,7 +3901,7 @@ public void FreezeTargets( int entity )
 				continue;
 			
 			GetClientAbsOrigin( i, vEnd );
-			if( GetVectorDistance( vPos, vEnd ) <= 250.0 ) // Radio
+			if( GetVectorDistance( vPos, vEnd ) <= 250.0 ) 
 			{
 				if( GetEntProp( i, Prop_Send, "m_fFlags" ) & FL_ONGROUND )
 				{
@@ -4429,7 +4395,7 @@ public bool _TraceFilter(int entity, int contentsMask)
 	return true;
 }
 
-/*************************************************************************************************************************************/
+
 stock void StartGlowing( int entity, int TeamIndex )
 {
 	if( !entity || !bLeft4DeadTwo ) 
@@ -4614,7 +4580,6 @@ float Sign( float vAng )
 		return -1.0;
 }
 
-/********************************************************************************************************************************************************/
 /**
  * @note Prints a message to all clients in the chat area.
  * @note Provides custom color support.
