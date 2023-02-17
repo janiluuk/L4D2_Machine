@@ -128,6 +128,7 @@ static bool	bLMC_Available;
 int MachineCount = 0;
 
 GlobalForward g_DeathForward;
+new g_iClassID = -1;
 
 static bool bLeft4DeadTwo;
 static bool bMapStarted;
@@ -371,6 +372,13 @@ int Native_DLR_Multiturret(Handle plugin, int numParams)
 
 	return 0;
 }
+public OnSkillSelected(iClient, iClass)
+{
+	new String:szSkillName[32];
+	GetPlayerSkillName(iClient, szSkillName, sizeof(szSkillName));
+       PrintToChat(iClient, "Your class is %s", szSkillName);
+}
+
 /******************************************************/
 public void OnAllPluginsLoaded()
 {
@@ -550,6 +558,7 @@ public void OnPluginStart()
 	
 	ResetAllState();
 	GetConVar();
+       g_iClassID = RegisterDLRSkill(PLUGIN_SKILL_NAME);
 }
 
 public void ConVarChange( ConVar hConVar, const char[] sOldValue, const char[] sNewValue )
