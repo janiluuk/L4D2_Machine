@@ -115,14 +115,23 @@ public Plugin myinfo =
 
 /****************************************************/
 #undef REQUIRE_PLUGIN
+#tryinclude <LMCCore>
+#define REQUIRE_PLUGIN
+
+#if !defined _LMCCore_included
+	native int LMC_GetEntityOverlayModel(int iEntity);
+#endif
+
+static bool	bLMC_Available;
+/****************************************************/
+
+#undef REQUIRE_PLUGIN
 #tryinclude <DLRCore>
 #define REQUIRE_PLUGIN
 
 #if !defined _DLRCore_included
        native int DLR_Multiturret(int client, float[] vPos);
 #endif
-
-static bool	bLMC_Available;
 /****************************************************/
 
 int MachineCount = 0;
@@ -354,7 +363,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	return APLRes_Success;
 }
 
-// Optional native from L4D2 Airstrike
+// Optional native from DLR Talents
 native void OnSpecialSkillSuccess(int client, char[] skillName);
 native void OnSpecialSkillFail(int client, char[] skillName, char[] reason);
 
@@ -372,6 +381,7 @@ int Native_DLR_Multiturret(Handle plugin, int numParams)
 
 	return 0;
 }
+
 public OnSkillSelected(iClient, iClass)
 {
 	new String:szSkillName[32];
