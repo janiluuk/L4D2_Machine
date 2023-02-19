@@ -98,7 +98,7 @@
 	}
 	"Too Many Machine Guns"
 	{
-		"en"		"There are too many turrets deployed! (%i/%i)"
+		"en"		"There are too many turrets deployed! (%d/%d)"
 	}
 	"Out Of The Game"
 	{
