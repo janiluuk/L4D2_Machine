@@ -6,7 +6,7 @@
 #include <sdktools_functions>
 #include <sdkhooks>
 #define PLUGIN_NAME "[L4D1 AND L4D2] Portable turret & gatling guns."
-#define PLUGIN_VERSION "4.4"
+#define PLUGIN_VERSION "4.5"
 
 /************************************************************************************************************************/
 #define TEAM_SPECTATOR               1 		
