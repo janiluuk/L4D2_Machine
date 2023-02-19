@@ -100,7 +100,7 @@
 #define TYPE_NAUSEATING 5 
 
 #define TRANSLATION_FILENAME 	"l4d_machine_multi.phrases" 
-#define PLUGIN_SKILL_NAME "MultiMachine"
+#define PLUGIN_SKILL_NAME "Multiturret"
 
 #define PI_NUM 3.14159 // PI
 
@@ -122,27 +122,22 @@ public Plugin myinfo =
 	native int LMC_GetEntityOverlayModel(int iEntity);
 #endif
 
-static bool	bLMC_Available;
 /****************************************************/
 
 #undef REQUIRE_PLUGIN
 #tryinclude <DLRCore>
 #define REQUIRE_PLUGIN
 
-#if !defined _DLRCore_included
-       native int DLR_Multiturret(int client, float[] vPos);
-#endif
 /****************************************************/
 
 int MachineCount = 0;
 
-GlobalForward g_DeathForward;
-new g_iClassID = -1;
+int g_iClassID = -1;
 
+static bool bLMC_Available = false;
 static bool bLeft4DeadTwo;
 static bool bMapStarted;
 static bool bFinalEvent;
-static bool g_bLateLoad;
 
 int g_CollisionOffset;
 int LaserModelIndex;
@@ -293,10 +288,10 @@ static float fCvar_MachineSleepTime;
 static float fCvar_MachineHealth;
 static float fCvar_MachineHealthGatling;
 static float fCvar_MachineDroppingTime;
+static float fCvar_MachineGlowRange;
 
 static int iCvar_MachineMaxAllowed;
 static int iCvar_MachineUsageMessage;
-static int fCvar_MachineGlowRange;
 
 static int iCvar_MachineAmmoCount;
 static int iCvar_MachineAmmoCountGatling;
@@ -355,41 +350,49 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		return APLRes_SilentFailure;
 	}
 
-	g_bLateLoad = late;
 	RegPluginLibrary(PLUGIN_SKILL_NAME);
-	CreateNative("DLR_Multiturret", Native_DLR_Multiturret);
-	MarkNativeAsOptional("OnPlayerUsedSpecialSkill");
+	MarkNativeAsOptional("OnSpecialSkillUsed");
 	MarkNativeAsOptional("OnPlayerClassChange");
+	MarkNativeAsOptional("GetPlayerSkillName");	
 	return APLRes_Success;
 }
 
 // Optional native from DLR Talents
 native void OnSpecialSkillSuccess(int client, char[] skillName);
 native void OnSpecialSkillFail(int client, char[] skillName, char[] reason);
+native void GetPlayerSkillName(int client, char[] skillName, int size);
+native int RegisterDLRSkill(char[] skillName);  
+
 
 // ====================================================================================================
 //					NATIVES
 // ====================================================================================================
-int Native_DLR_Multiturret(Handle plugin, int numParams)
-{
-	if( hCvar_Machine_Enabled )
-	{
-		int client = GetNativeCell(1);
-		int type = GetNativeCell(2);
-		BuildMachineGunsMainMenu(client);
-	}
 
-	return 0;
-}
-
-public OnSkillSelected(iClient, iClass)
+public void OnSkillSelected(int iClient, int iClass)
 {
-	new String:szSkillName[32];
+	char szSkillName[32];
 	GetPlayerSkillName(iClient, szSkillName, sizeof(szSkillName));
-       PrintToChat(iClient, "Your class is %s", szSkillName);
+	PrintToChat(iClient, "Your class is %s", szSkillName);
 }
 
-/******************************************************/
+// ====================================================================================================
+//					NATIVES
+// ====================================================================================================
+
+public void OnSpecialSkillUsed(int iClient, char[] skillName)
+{
+	char szSkillName[32];
+	GetPlayerSkillName(iClient, szSkillName, sizeof(szSkillName));
+
+	if( StrEqual( szSkillName, PLUGIN_SKILL_NAME))
+	{
+		CMD_MainMenu(iClient, 0);
+		PrintToChat(iClient, "%s used", szSkillName);		
+	} else {
+		PrintToChat(iClient, "%s is not this class", skillName);				
+	}
+}
+
 public void OnAllPluginsLoaded()
 {
 	bLMC_Available = LibraryExists("LMCEDeathHandler");
@@ -406,7 +409,6 @@ public void OnLibraryRemoved(const char[] sName)
 	if( StrEqual( sName, "LMCEDeathHandler" ) )
 		bLMC_Available = false;
 }
-/******************************************************/
 
 public void OnPluginStart()
 {	
@@ -560,15 +562,15 @@ public void OnPluginStart()
 //	HookEvent("finale_vehicle_leaving", Event_FinaleVehicleLeaving, EventHookMode_PostNoCopy );
 //	HookEvent("finale_vehicle_incoming", Event_FinaleVehicleInComing, EventHookMode_PostNoCopy); // L4D2
 
-	RegConsoleCmd( "sm_machine", CMD_SpawnMachine, "Creates a machine gun in front of the player." );
-	RegConsoleCmd( "sm_removemachine", CMD_RemoveMachine, "Removes the machine gun in the crosshairs." );
-	RegConsoleCmd( "sm_machinemenu", CMD_MainMenu, "Open the turret menu (only in-game)");
-	
-	RegAdminCmd( "sm_resetmachine", Cmd_ResetMachine, ADMFLAG_ROOT, "reloads the settings and removes all the spawned turrets" );
-	
+	g_iClassID = RegisterDLRSkill(PLUGIN_SKILL_NAME);
+	if (g_iClassID < 0) { 
+		RegConsoleCmd( "sm_machine", CMD_SpawnMachine, "Creates a machine gun in front of the player." );
+		RegConsoleCmd( "sm_removemachine", CMD_RemoveMachine, "Removes the machine gun in the crosshairs." );
+		RegConsoleCmd( "sm_machinemenu", CMD_MainMenu, "Open the turret menu (only in-game)");
+		RegAdminCmd( "sm_resetmachine", Cmd_ResetMachine, ADMFLAG_ROOT, "reloads the settings and removes all the spawned turrets" );
+	}
 	ResetAllState();
 	GetConVar();
-       g_iClassID = RegisterDLRSkill(PLUGIN_SKILL_NAME);
 }
 
 public void ConVarChange( ConVar hConVar, const char[] sOldValue, const char[] sNewValue )
@@ -588,8 +590,6 @@ void GetConVar()
 	bCvar_Machine_SingleTurretMode = hCvar_Machine_SingleTurretMode.BoolValue;
 	bCvar_MachineBlocking = hCvar_MachineBlocking.BoolValue;	
 
-	iCvar_GameModesToggle = hCvar_Machine_GameModesToggle.IntValue;
-
 	fCvar_MachineDamageToInfected = hCvar_MachineDamageToInfected.FloatValue;
 	fCvar_MachineDamageToSurvivor = hCvar_MachineDamageToSurvivor.FloatValue;
 	fCvar_MachineOverHeat = hCvar_MachineOverHeat.FloatValue;
@@ -601,7 +601,8 @@ void GetConVar()
 	fCvar_MachineHealthGatling = hCvar_MachineHealthGatling.FloatValue;
 	fCvar_MachineGlowRange = hCvar_MachineGlowRange.FloatValue;
 	fCvar_MachineDroppingTime = hCvar_MachineDroppingTime.FloatValue;
-	
+
+	iCvar_GameModesToggle = hCvar_Machine_GameModesToggle.IntValue;
 	iCvar_MachineMaxAllowed = hCvar_MachineMaxAllowed.IntValue;
 	iCvar_MachineUsageMessage = hCvar_MachineUsageMessage.IntValue;	
 	iCvar_MachineAmmoCount = hCvar_MachineAmmoCount.IntValue;
@@ -612,9 +613,7 @@ void GetConVar()
 	iCvar_MachineBetrayChance = hCvar_MachineBetrayChance.IntValue;
 	iCvar_MachineLimit = hCvar_MachineLimit.IntValue;
 	iCvar_MachineLimitGatling = hCvar_MachineLimitGatling.IntValue;
-
 	iCvar_MachineEnableExplosion = hCvar_MachineEnableExplosion.IntValue;
-	
 	bCvar_MachineAmmoReload = hCvar_MachineAmmoReload.BoolValue;
 	bCvar_MachineAmmoReloadGatling = hCvar_MachineAmmoReloadGatling.BoolValue;	
 	bCvar_MachineAllowUse = hCvar_MachineAllowUse.BoolValue;
@@ -919,7 +918,6 @@ public Action Event_EntityShoved( Event hEvent, const char[] sName, bool bDontBr
 	return Plugin_Continue;
 }
 
-
 public Action Event_PlayerUses( Event hEvent, const char[] sName, bool bDontBroadcast)
 {
 	if( !IsAllowedPlugin() ) 
@@ -1050,7 +1048,6 @@ public Action OnNormalSoundPlay( int clients[MAXPLAYERS], int &numClients, char 
 	return Plugin_Continue;
 }*/
 
-/***********************************************************************************************************************************************/
 public Action Cmd_ResetMachine( int client, int args )
 {
 	ResetAllState();
@@ -1328,6 +1325,7 @@ public int PanelHandler( Handle hPanel, MenuAction hAction, int iParam1, int iPa
 	{
 		delete hPanel;
 	}
+	return 0;
 }
 
 public int MenuHandler( Menu hMenu, MenuAction hAction, int Param1, int Param2 )
@@ -1365,6 +1363,7 @@ public int MenuHandler( Menu hMenu, MenuAction hAction, int Param1, int Param2 )
 		}
 
 	}
+	return 0;
 }
 
 void BuildBasicMachineGunsMenu( int client )
@@ -1450,6 +1449,7 @@ public int MenuHandler_BasicMachineGuns( Menu hMenu, MenuAction hAction, int Par
 			}
 		}
 	}
+	return 0;
 }
 
 void BuildAdvancedMachineGunsMenu( int client )
@@ -1538,6 +1538,7 @@ public int MenuHandler_AdvancedMachineGuns( Menu hMenu, MenuAction hAction, int 
 			}
 		}
 	}
+	return 0;
 }
 /****************************************************************************************************************************************/
 public Action CMD_RemoveMachine( int client, int args )
@@ -1576,12 +1577,14 @@ public Action ShowInfo( Handle hTimer, DataPack hPack )
 	CloseHandle( hPack );
 	
 	if( !IsValidClient( client ) || !IsValidEntity( iEntity ) )
-		return;
+		return Plugin_Stop;
 	
 	if( bLeft4DeadTwo ) 
 		DisplayHint( client, iEntity );
 	else
 		CustomPrintToChat(client, "%s %t", sPluginTag, "Use Instructor" );
+
+	return Plugin_Continue;
 }
 
 void DisplayHint( int client, int entity )
@@ -1606,6 +1609,7 @@ public Action DelayDisplayHint( Handle hTimer, DataPack hPack )
 	Format( sMessage, sizeof sMessage, "%T", "Use Instructor", client );
 	RemoveColorCodes( sMessage, sizeof sMessage );
 	DisplayInstructorHint( client, sMessage, "icon_interact", GetColorIndex( GetMachineGunColor( iEntity ) ) );
+	return Plugin_Continue;	
 }
 
 int GetMachineGunColor( int entity ) 
@@ -1665,13 +1669,14 @@ public Action RemoveInstructorHint( Handle hTimer, DataPack hPack )
 	CloseHandle( hPack );
 	
 	if( !IsClientPlaying( client ) )
-		return;
+		return Plugin_Stop;
 
 	if( IsValidEntity( iEntity ) )
 		RemoveEdict( iEntity );
 	
 	ClientCommand( client, "gameinstructor_enable 0" );
 	DispatchKeyValue( client, "targetname", "" );
+	return Plugin_Continue;
 }
 
 stock int PrecacheParticle( const char[] sEffectName )
@@ -1933,13 +1938,6 @@ bool IsFinale()
 	return false;
 }
 
-void DeployFailed()
-{
-	
-	
-
-}
-/****************************************************************************************************************************************/
 void CreateMachine( int client, int iMachineGunModel, int iSpecialType = NULL )
 {
 	if( !IsClientPlaying( client ) )
@@ -1966,7 +1964,7 @@ void CreateMachine( int client, int iMachineGunModel, int iSpecialType = NULL )
 		int iEntity = Gun[MachineCount];
 		
 		PrintUserSelection( client, iMachineGunModel, iSpecialType ); 
-/**********************************************************************************************************************************************************/		
+
 		if( MachineGunTypes[iEntity] == TYPE_FREEZE )
 		{			
 			for(int iArrayNum = 0; iArrayNum < MAX_EACHPLAYER; iArrayNum ++)
@@ -1998,7 +1996,7 @@ void CreateMachine( int client, int iMachineGunModel, int iSpecialType = NULL )
 				}
 			}
 		}
-/**********************************************************************************************************************************************************/			
+
 		GunState[MachineCount] = State_Scan;
 		LastTime[MachineCount] = GetEngineTime();
 		Broken[MachineCount] = false;
@@ -2015,7 +2013,6 @@ void CreateMachine( int client, int iMachineGunModel, int iSpecialType = NULL )
 		AmmoIndicator[MachineCount] = 0;
 		GunLastCarryTime[MachineCount] = GetEngineTime();
 		
-
 		GunAmmo[MachineCount] = isGatlingGun(MachineCount) ? iCvar_MachineAmmoCountGatling : iCvar_MachineAmmoCount;
 		GunHealth[MachineCount] = isGatlingGun(MachineCount) ? fCvar_MachineHealthGatling : fCvar_MachineHealth;
 		
@@ -2154,7 +2151,6 @@ int SpawnMiniGun( int client, int index, int iMachineGunModel, int iSpecialType 
 	static float VecOrigin[3];
 	static float VecAngles[3];
 	static float VecDirection[3];
-	
 	static int iEntity = -1;
 	
 	if( iMachineGunModel == MACHINE_MINI )
@@ -2297,7 +2293,8 @@ void StartCarry(int client, int iEntity)
 				GunOwner[index] = client;
 			}
 		} else {
-					PrintHintText( client, "This gun is not movable");			
+			
+			PrintHintText( client, "This gun is not movable");
 			return;
 		}
 		
@@ -2354,13 +2351,13 @@ void AttachEntity( int iOwner, int iEntity, const char[] sPositon = "medkit", co
 int StopClientCarry( int client )
 {
 	if( !client ) 
-		return;
+		return 0;
 	
 	int index = FindCarryIndex(client);
 	if( index >= 0 )
 		StopCarry( index );
 	
-	return;
+	return 1;
 }
 
 void StopCarry( int index )
@@ -2424,7 +2421,6 @@ void Carrying( int index, float intervual )
 	LastButton[index] = client;
 }
 
-/**************************************************************************************************************************************/
 void SetStatusHealth( int index, float damage, int attacker, bool bBroken = false )
 {
 	GunHealth[index] -= damage;
@@ -2439,7 +2435,7 @@ void SetStatusHealth( int index, float damage, int attacker, bool bBroken = fals
 	}
 }
 
-public Action PreThinkGun( int iEntity )
+public void PreThinkGun( int iEntity )
 {
 	int index = FindGunIndex( iEntity );
 	if( index != -1 )
@@ -2511,7 +2507,6 @@ public void OnTakeDamagePost( int victim, int attacker, int inflictor, float dam
 				
 				bPrint = true;
 				
-/************************************************************************/			
 				if( GetClientTeam( attacker ) == TEAM_SURVIVOR && damagetype & DMG_BULLET )
 				{
 					SetStatusHealth( index, damage, attacker );
@@ -2538,8 +2533,7 @@ public void OnTakeDamagePost( int victim, int attacker, int inflictor, float dam
 				else if( GetClientTeam( attacker ) == TEAM_SURVIVOR )
 				{
 					SetStatusHealth( index, damage, attacker );
-				}
-/************************************************************************/	
+				}	
 			}
 			else 
 				bPrint = false;
@@ -2768,7 +2762,7 @@ public Action UserPushTimer( Handle hTimer, DataPack hPack )
 	CloseHandle( hPack );
 	
 	if( !IsClientPlaying( client ) || !IsValidEntity( iEntity ) )
-		return;
+		return Plugin_Stop;
 	
 	SetEntProp( client, Prop_Data, "m_nButtons", IN_BACK );
 //	SetEntPropEnt( client, Prop_Send, "m_usingMinigun", 0 ); 		
@@ -2785,6 +2779,7 @@ public Action UserPushTimer( Handle hTimer, DataPack hPack )
 	hPackEffects.WriteCell( EntIndexToEntRef( iEntity ) );
 	
 	CreateTimer( 1.5, ShowEnergyEffects, hPackEffects, TIMER_FLAG_NO_MAPCHANGE );
+	return Plugin_Continue;	
 }
 
 
@@ -3278,11 +3273,6 @@ stock bool IsMeleeAttack( int client )
 	return false;
 }
 
-#if !defined _LMCCore_included
-	native int LMC_GetEntityOverlayModel(int iEntity);
-#endif
-
-/********************************************************************************************************************************************************/
 stock bool IsMiniGun( int entity )
 {
 	if( entity > 0 )
@@ -3551,6 +3541,7 @@ public Action TimerDeleteEffetcs( Handle hTimer, DataPack hPack )
 		
 	if( IsValidEntity( index ))
 		StopSound( index, SNDCHAN_AUTO, bLeft4DeadTwo ? SOUND_FIRE_L4D2 : SOUND_FIRE_L4D1 );	
+	return Plugin_Continue;		
 }
 
 stock void CreateLaser( float vPos[3], float vTargetPosition[3] )
@@ -3637,9 +3628,10 @@ public Action KillEntity( Handle hTimer, any EntityID )
 {
 	int entity = EntRefToEntIndex( EntityID );
 	if( !IsValidEntity( entity ) ) 
-		return;
+		return Plugin_Stop;
 	
 	AcceptEntityInput(entity, "Kill"); 
+	return Plugin_Continue;
 }
 
 stock void CreateElectricArc( float vPos[3], float vEndPos[3] )
@@ -4154,8 +4146,11 @@ public Action OnCommonDamage(int victim, int &attacker, int &inflictor, float &d
 public Action DissolveCommonDelay( Handle hTimer, any TargetID ) 
 {
 	int target = EntRefToEntIndex( TargetID );
-	if( IsValidEntity( target ) )
+	if( IsValidEntity( target ) ) {
 		DissolveCommon( target );
+		return Plugin_Continue;
+	} 
+	return Plugin_Stop;
 }
 /*************************************************************************************************************************************/
 /*
@@ -4491,7 +4486,6 @@ stock int GetColor( char[] sTemp )
 	return iColor;
 }
 
-
 public Action ShowEnergyEffects( Handle hTimer, DataPack hPack )
 {	
 	hPack.Reset( false );
@@ -4500,7 +4494,7 @@ public Action ShowEnergyEffects( Handle hTimer, DataPack hPack )
 	CloseHandle( hPack );
 	
 	if( !IsClientPlaying( client ) || !IsValidEntity( iEntity ) )
-		return;
+		return Plugin_Stop;
 	
 	static float vMachinePosition[3];
 	static float vTargetPosition[3];
@@ -4524,6 +4518,7 @@ public Action ShowEnergyEffects( Handle hTimer, DataPack hPack )
 	}
 	
 	CreateBeam( "LaserBeam0", "LaserBeam_end0", vMachinePosition, vTargetPosition, client, "50", sColor, 0.3 );
+	return Plugin_Continue;
 }
 /*
 void PushUser( int index ) 
