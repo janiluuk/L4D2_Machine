@@ -578,9 +578,9 @@ public void OnPluginStart()
 		g_iClassID = -1;
 	}
 	if (g_iClassID < 0) { 
-//		RegConsoleCmd( "sm_machine", CMD_SpawnMachine, ADMFLAG_ROOT, "Creates a machine gun in front of the player." );
+		RegAdminCmd( "sm_machine", CMD_SpawnMachine, ADMFLAG_ROOT, "Creates a machine gun in front of the player." );
 		RegConsoleCmd( "sm_removemachine", CMD_RemoveMachine, "Removes the machine gun in the crosshairs." );
-	//	RegAdminCmd( "sm_machinemenu", CMD_MainMenu, ADMFLAG_ROOT, "Open the turret menu (only in-game)");
+		RegAdminCmd( "sm_machinemenu", CMD_MainMenu, ADMFLAG_ROOT, "Open the turret menu (only in-game)");
 		RegAdminCmd( "sm_resetmachine", Cmd_ResetMachine, ADMFLAG_ROOT, "reloads the settings and removes all the spawned turrets" );
 	}
 	ResetAllState();
