@@ -123,11 +123,14 @@ public Plugin myinfo =
 #endif
 
 /****************************************************/
-
-#undef REQUIRE_PLUGIN
 #tryinclude <DLRCore>
-#define REQUIRE_PLUGIN
-
+#if !defined _DLRCore_included
+	// Optional native from DLR Talents
+	native void OnSpecialSkillSuccess(int client, char[] skillName);
+	native void OnSpecialSkillFail(int client, char[] skillName, char[] reason);
+	native void GetPlayerSkillName(int client, char[] skillName, int size);
+	native int RegisterDLRSkill(char[] skillName);  
+#endif
 /****************************************************/
 
 int MachineCount = 0;
@@ -135,7 +138,9 @@ int MachineCount = 0;
 int g_iClassID = -1;
 
 static bool bLMC_Available = false;
-static bool bLeft4DeadTwo;
+static bool DLR_Available = false;
+
+static bool bLeft4DeadTwo = true;
 static bool bMapStarted;
 static bool bFinalEvent;
 
@@ -351,18 +356,13 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	}
 
 	RegPluginLibrary(PLUGIN_SKILL_NAME);
-	MarkNativeAsOptional("OnSpecialSkillUsed");
+	MarkNativeAsOptional("OnSpecialSkillFail");	
+	MarkNativeAsOptional("OnSpecialSkillSuccess");		
 	MarkNativeAsOptional("OnPlayerClassChange");
 	MarkNativeAsOptional("GetPlayerSkillName");	
+	MarkNativeAsOptional("RegisterDLRSkill");	
 	return APLRes_Success;
 }
-
-// Optional native from DLR Talents
-native void OnSpecialSkillSuccess(int client, char[] skillName);
-native void OnSpecialSkillFail(int client, char[] skillName, char[] reason);
-native void GetPlayerSkillName(int client, char[] skillName, int size);
-native int RegisterDLRSkill(char[] skillName);  
-
 
 // ====================================================================================================
 //					NATIVES
@@ -379,8 +379,14 @@ public void OnSkillSelected(int iClient, int iClass)
 //					NATIVES
 // ====================================================================================================
 
-public void OnSpecialSkillUsed(int iClient, char[] skillName)
+public int OnSpecialSkillUsed(int iClient, int skill)
 {
+	if (skill == 4) {
+
+		CMD_MainMenu(iClient, 0);
+		return 0;
+	}
+
 	char szSkillName[32];
 	GetPlayerSkillName(iClient, szSkillName, sizeof(szSkillName));
 
@@ -389,19 +395,23 @@ public void OnSpecialSkillUsed(int iClient, char[] skillName)
 		CMD_MainMenu(iClient, 0);
 		PrintToChat(iClient, "%s used", szSkillName);		
 	} else {
-		PrintToChat(iClient, "%s is not this class", skillName);				
+		PrintToChat(iClient, "%s is not this class", skill);				
 	}
 }
 
 public void OnAllPluginsLoaded()
 {
 	bLMC_Available = LibraryExists("LMCEDeathHandler");
+	DLR_Available = LibraryExists("dlr_talents_2023");
+
 }
 
 public void OnLibraryAdded(const char[] sName)
 {
 	if( StrEqual( sName, "LMCEDeathHandler" ) )
 		bLMC_Available = true;
+	if( StrEqual( sName, "dlr_talents_2023" ) )
+		DLR_Available = true;		
 }
 
 public void OnLibraryRemoved(const char[] sName)
@@ -562,11 +572,15 @@ public void OnPluginStart()
 //	HookEvent("finale_vehicle_leaving", Event_FinaleVehicleLeaving, EventHookMode_PostNoCopy );
 //	HookEvent("finale_vehicle_incoming", Event_FinaleVehicleInComing, EventHookMode_PostNoCopy); // L4D2
 
-	g_iClassID = RegisterDLRSkill(PLUGIN_SKILL_NAME);
+	if (DLR_Available) {
+		g_iClassID = RegisterDLRSkill(PLUGIN_SKILL_NAME);
+	} else {
+		g_iClassID = -1;
+	}
 	if (g_iClassID < 0) { 
-		RegConsoleCmd( "sm_machine", CMD_SpawnMachine, "Creates a machine gun in front of the player." );
+//		RegConsoleCmd( "sm_machine", CMD_SpawnMachine, ADMFLAG_ROOT, "Creates a machine gun in front of the player." );
 		RegConsoleCmd( "sm_removemachine", CMD_RemoveMachine, "Removes the machine gun in the crosshairs." );
-		RegConsoleCmd( "sm_machinemenu", CMD_MainMenu, "Open the turret menu (only in-game)");
+	//	RegAdminCmd( "sm_machinemenu", CMD_MainMenu, ADMFLAG_ROOT, "Open the turret menu (only in-game)");
 		RegAdminCmd( "sm_resetmachine", Cmd_ResetMachine, ADMFLAG_ROOT, "reloads the settings and removes all the spawned turrets" );
 	}
 	ResetAllState();
@@ -1801,6 +1815,13 @@ stock bool IsValidClient( int client )
 	return client > 0 && client <= MaxClients && IsClientInGame( client ) && !IsClientInKickQueue( client );
 }
 
+stock bool IsPlayerGhost (int client)
+{
+    if (GetEntData(client, FindSendPropInfo("CTerrorPlayer", "m_isGhost"), 1))
+        return true;
+    return false;
+}
+
 stock bool IsClientValidAdmin( int client )
 {	
 	if( !IsClientConnected( client ) || !IsClientInGame( client ) || !IsValidClient( client ) || IsFakeClient( client ) )
@@ -1880,7 +1901,8 @@ stock int IsValidInfected( int client )
  *
  * @param client		The client index.
  * @return              False if the client is not the Tank, true otherwise.
- *//*
+ */
+
 stock bool IsTank( int client )
 {
 	if( client > 0 && client <= MaxClients && IsClientInGame( client ) && GetClientTeam( client ) == TEAM_INFECTED )
@@ -1889,14 +1911,7 @@ stock bool IsTank( int client )
 	
 	return false;
 }
-*/
-stock bool IsPlayerGhost( int client )
-{
-	if( GetEntProp( client, Prop_Send, "m_isGhost", 1 ) ) 
-		return true;
-	
-	return false;
-}
+
 
 stock bool IsPlayerIncapacitated( int client )
 {
@@ -1950,7 +1965,9 @@ void CreateMachine( int client, int iMachineGunModel, int iSpecialType = NULL )
 	{
 		char reason[128];
 		Format(reason, sizeof(reason), "%t", "Too Many Machine Guns",	MachineCount, iCvar_MachineMaxAllowed );
-		OnSpecialSkillFail(client, PLUGIN_SKILL_NAME, reason );
+		if (DLR_Available) { 
+			OnSpecialSkillFail(client, PLUGIN_SKILL_NAME, reason );
+		}
 		CustomPrintToChat( client, "%s", reason );
 		return;
 	}
@@ -2034,7 +2051,8 @@ void CreateMachine( int client, int iMachineGunModel, int iSpecialType = NULL )
 		}
 
 		MachineCount++;
-		OnSpecialSkillSuccess(client, PLUGIN_SKILL_NAME);
+		if (DLR_Available)
+			OnSpecialSkillSuccess(client, PLUGIN_SKILL_NAME);
 
 		SDKUnhook( iEntity, SDKHook_OnTakeDamagePost, OnTakeDamagePost );
 		SDKHook( iEntity, SDKHook_OnTakeDamagePost, OnTakeDamagePost );
@@ -3043,14 +3061,14 @@ int IsEnemyVisible( int iEntity, int iNewTarget, float vStartingPos[3], float vE
 	{
 		if( target <= MaxClients )
 		{
-			if( IsClientInGame( target ) && IsPlayerAlive( target ) && GetClientTeam( target ) == iTeam )
+			if( IsClientInGame( target ) && IsPlayerAlive( target ) && GetClientTeam( target ) == iTeam && !IsPlayerGhost(target))
 				return target;
 			else 
 				return 0;
 		}
 		else if( iTeam == 3 )
 		{
-			if( (IsInfected( target ) || IsWitch( target )) && !IsPlayerGhost(target))
+			if( (IsInfected(target) || IsWitch(target ) || IsValidInfected(target) == TANK) )
 				return target;
 			else 
 				return 0;
