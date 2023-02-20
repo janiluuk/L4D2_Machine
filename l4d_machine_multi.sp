@@ -85,7 +85,7 @@
 #define DMG_HEADSHOT (1 << 31) 	
 
 #define MAX_ALLOWED		15	
-#define MAX_EACHPLAYER 	5	
+#define MAX_EACHPLAYER 	4	
 #define MAX_ENTITIES 	2048 	
 
 #define NULL 0 			
@@ -129,7 +129,8 @@ public Plugin myinfo =
 	native void OnSpecialSkillSuccess(int client, char[] skillName);
 	native void OnSpecialSkillFail(int client, char[] skillName, char[] reason);
 	native void GetPlayerSkillName(int client, char[] skillName, int size);
-	native int RegisterDLRSkill(char[] skillName);  
+	native int FindSkillIdByName(char[] skillName);
+	native int RegisterDLRSkill(char[] skillName, int type);
 #endif
 /****************************************************/
 
@@ -360,7 +361,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	MarkNativeAsOptional("OnSpecialSkillSuccess");		
 	MarkNativeAsOptional("OnPlayerClassChange");
 	MarkNativeAsOptional("GetPlayerSkillName");	
-	MarkNativeAsOptional("RegisterDLRSkill");	
+	MarkNativeAsOptional("RegisterDLRSkill");
 	return APLRes_Success;
 }
 
@@ -372,7 +373,7 @@ public void OnSkillSelected(int iClient, int iClass)
 {
 	char szSkillName[32];
 	GetPlayerSkillName(iClient, szSkillName, sizeof(szSkillName));
-	PrintToChat(iClient, "Your class is %s", szSkillName);
+	PrintToChat(iClient, "Your skill is %s", szSkillName);
 }
 
 // ====================================================================================================
@@ -381,12 +382,6 @@ public void OnSkillSelected(int iClient, int iClass)
 
 public int OnSpecialSkillUsed(int iClient, int skill)
 {
-	if (skill == 4) {
-
-		CMD_MainMenu(iClient, 0);
-		return 0;
-	}
-
 	char szSkillName[32];
 	GetPlayerSkillName(iClient, szSkillName, sizeof(szSkillName));
 
@@ -403,7 +398,6 @@ public void OnAllPluginsLoaded()
 {
 	bLMC_Available = LibraryExists("LMCEDeathHandler");
 	DLR_Available = LibraryExists("dlr_talents_2023");
-
 }
 
 public void OnLibraryAdded(const char[] sName)
@@ -418,6 +412,8 @@ public void OnLibraryRemoved(const char[] sName)
 {
 	if( StrEqual( sName, "LMCEDeathHandler" ) )
 		bLMC_Available = false;
+	if( StrEqual( sName, "dlr_talents_2023" ) )
+		DLR_Available = false;	
 }
 
 public void OnPluginStart()
@@ -573,7 +569,7 @@ public void OnPluginStart()
 //	HookEvent("finale_vehicle_incoming", Event_FinaleVehicleInComing, EventHookMode_PostNoCopy); // L4D2
 
 	if (DLR_Available) {
-		g_iClassID = RegisterDLRSkill(PLUGIN_SKILL_NAME);
+		g_iClassID = RegisterDLRSkill(PLUGIN_SKILL_NAME, 0);
 	} else {
 		g_iClassID = -1;
 	}
