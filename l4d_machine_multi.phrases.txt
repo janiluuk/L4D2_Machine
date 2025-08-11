@@ -247,4 +247,64 @@
 
 		"en"	  "Nauseating"
 	}
+        "Basic Menu Description"
+        {
+                "en"            "Deploy gatling turrets"
+        }
+        "Advanced Menu Description"
+        {
+                "en"            "Deploy 50 cal turrets"
+        }
+        "Remove Turret Description"
+        {
+                "en"            "Remove the aimed turret"
+        }
+        "Gatling Basic Machine Gun Desc"
+        {
+                "en"            "Standard rapid-fire gun"
+        }
+        "Gatling Fire-Type Desc"
+        {
+                "en"            "Ignites targets"
+        }
+        "Gatling Laser-Type Desc"
+        {
+                "en"            "Cuts with lasers"
+        }
+        "Gatling Tesla-Type Desc"
+        {
+                "en"            "Electrocutes enemies"
+        }
+        "Gatling Freeze-Type Desc"
+        {
+                "en"            "Freezes enemies"
+        }
+        "Gatling Nauseating-Type Desc"
+        {
+                "en"            "Vomits on impact"
+        }
+        "50 Cal Normal Desc"
+        {
+                "en"            "High-power turret"
+        }
+        "50 Cal Fire-Type Desc"
+        {
+                "en"            "Ignites targets"
+        }
+        "50 Cal Laser-Type Desc"
+        {
+                "en"            "Precision laser shots"
+        }
+        "50 Cal Tesla-Type Desc"
+        {
+                "en"            "Electrocutes enemies"
+        }
+        "50 Cal Freeze-Type Desc"
+        {
+                "en"            "Freezes enemies"
+        }
+        "Cal 50 Nauseating-Type Desc"
+        {
+                "en"            "Vomits on impact"
+        }
 }
