@@ -1943,16 +1943,25 @@ bool IsAllowedPlugin()
 
 bool IsFinale()
 {
-	if( !bCvar_Machine_FinaleOnly || ( bCvar_Machine_FinaleOnly && bFinalEvent ) )
-		return true;
-	
-	return false;
+        if( !bCvar_Machine_FinaleOnly || ( bCvar_Machine_FinaleOnly && bFinalEvent ) )
+                return true;
+
+        return false;
+}
+
+void ShowMachineCount( int client )
+{
+        if( !IsValidClient( client ) )
+                return;
+
+        int iLimit = iCvar_MachineLimit + iCvar_MachineLimitGatling;
+        PrintHintText( client, "%t", "Machine Gun Count", MachineGunCounterUser[client], iLimit );
 }
 
 void CreateMachine( int client, int iMachineGunModel, int iSpecialType = NULL )
 {
-	if( !IsClientPlaying( client ) )
-	{
+        if( !IsClientPlaying( client ) )
+        {
 		CustomPrintToChat( client, "%s %t", sPluginTag, "Out Of The Game" );
 		return;
 	}
@@ -2046,9 +2055,10 @@ void CreateMachine( int client, int iMachineGunModel, int iSpecialType = NULL )
 			CreateTimer( 1.0, ShowInfo, hPack, TIMER_FLAG_NO_MAPCHANGE );
 		}
 
-		MachineCount++;
-		if (DLR_Available)
-			OnSpecialSkillSuccess(client, PLUGIN_SKILL_NAME);
+               MachineCount++;
+               ShowMachineCount( client );
+               if (DLR_Available)
+                       OnSpecialSkillSuccess(client, PLUGIN_SKILL_NAME);
 
 		SDKUnhook( iEntity, SDKHook_OnTakeDamagePost, OnTakeDamagePost );
 		SDKHook( iEntity, SDKHook_OnTakeDamagePost, OnTakeDamagePost );
@@ -2140,10 +2150,12 @@ void RemoveMachine( int index, int client )
 	if( !client )
 		return;
 	
-	MachineGunCounterUser[client] --; 
-	
-	if( MachineGunCounterUser[client] < 0 )
-		MachineGunCounterUser[client] = 0;
+        MachineGunCounterUser[client] --;
+
+        if( MachineGunCounterUser[client] < 0 )
+                MachineGunCounterUser[client] = 0;
+
+       ShowMachineCount( client );
 }
 
 int SpawnMiniGun( int client, int index, int iMachineGunModel, int iSpecialType = NULL )
