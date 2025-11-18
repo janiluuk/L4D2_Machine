@@ -197,7 +197,6 @@ float LastTime[MAXPLAYERS+1];
 float MachineGunerTime[MAXPLAYERS+1];
 float Machine_RateTime[MAXPLAYERS+1];
 
-int ShowMsg[MAXPLAYERS+1];
 
 static bool bBasicAllowed;
 static bool bFlameAllowed;
@@ -253,7 +252,6 @@ static ConVar hCvar_MachineBasicAdminOnly;
 static ConVar hCvar_MachineSpecialAdminOnly;
 static ConVar hCvar_MachineSpecialAllowed;
 
-static ConVar hCvar_MachineUsageMessage;
 static ConVar hCvar_MachineAmmoCount;
 static ConVar hCvar_MachineAmmoCountGatling;
 static ConVar hCvar_MachineAmmoType;
@@ -278,6 +276,8 @@ static ConVar hCvar_MachineLimitGatling;
 static ConVar hCvar_MachineEnableExplosion;
 
 static ConVar hCvar_MachineDroppingTime;
+static ConVar hCvar_MachineHintTime;
+static ConVar hCvar_GameInstructor;
 
 static Handle SDKDissolveCreate = INVALID_HANDLE; 
 static Handle SDKVomitOnPlayer = INVALID_HANDLE;
@@ -297,7 +297,6 @@ static float fCvar_MachineDroppingTime;
 static float fCvar_MachineGlowRange;
 
 static int iCvar_MachineMaxAllowed;
-static int iCvar_MachineUsageMessage;
 
 static int iCvar_MachineAmmoCount;
 static int iCvar_MachineAmmoCountGatling;
@@ -462,6 +461,7 @@ public void OnPluginStart()
 	
 	LoadPluginTranslations();
 	
+        hCvar_GameInstructor                            = FindConVar("gameinstructor_enable");
 	hCvar_MPGameMode 				= FindConVar("mp_gamemode");
 	hCvar_Machine_Enabled 			= CreateConVar("l4d_machine_enable", 				"1", 		"Enables/Disables the plugin. 0 = Plugin OFF, 1 = Plugin ON.", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 	hCvar_Machine_FinaleOnly 		= CreateConVar("l4d_machine_finale_only", 			"0", 		"Enables/Disables the use of turrets only in final events.\n0 = OFF.\n1 = ON", FCVAR_NOTIFY, true, 0.0, true, 1.0);
@@ -479,7 +479,6 @@ public void OnPluginStart()
 	hCvar_MachineBasicAdminOnly 	= CreateConVar("l4d_machine_basic_adminonly", 		"", 		"Sets access to gatling turrets by admin flags.\n0 = Allowed for everyone.", FCVAR_NOTIFY);
 	hCvar_MachineSpecialAdminOnly 	= CreateConVar("l4d_machine_special_adminonly", 	"", 		"Sets access to 50 cal turrets by admin flags.\n0 = Allowed for everyone.", FCVAR_NOTIFY);
 	hCvar_MachineSpecialAllowed 	= CreateConVar("l4d_machine_special_allowed", 		"Basic,Flame,Laser,Tesla,Freeze,Nauseating", "Set types of machine guns allowed", FCVAR_NOTIFY);	
-	hCvar_MachineUsageMessage 		= CreateConVar("l4d_machine_usage_message", 		"1", 		"Number of times usage information is shown.\n0 = Disable", FCVAR_NOTIFY, true, 0.0, true, 5.0);
 	hCvar_MachineAmmoCountGatling	= CreateConVar("l4d_machine_ammo_gatling_count",	"800", 		"Sets the amount of ammo per gun", FCVAR_NOTIFY, true, 100.0, true, 10000.0);
 	hCvar_MachineAmmoCount 			= CreateConVar("l4d_machine_ammo_count", 			"2000", 	"Sets the amount of ammo per gun", FCVAR_NOTIFY, true, 100.0, true, 10000.0);
 	hCvar_MachineAmmoType 			= CreateConVar("l4d_machine_ammo_type", 			"0", 		"Sets ammunition type for bullets.\n0 = Normal Ammo.\n1 = Incendiary Ammo.\n2 = Explosive Ammo.", FCVAR_NOTIFY, true, 0.0, true, 2.0 );
@@ -501,6 +500,7 @@ public void OnPluginStart()
 	hCvar_MachineMaxAllowed 		= CreateConVar("l4d_machine_max_allowed", 			"8", 		"Maximum total amount of turrets per game", FCVAR_NOTIFY, true, 1.0, true, float( MAX_ALLOWED ) );
 	hCvar_MachineEnableExplosion 	= CreateConVar("l4d_machine_enable_explosion", 		"10", 		"Amount of damage to cause when exploding \n0 = No damage", FCVAR_NOTIFY, true, 0.0, true, 100.0 );
 	hCvar_MachineDroppingTime 		= CreateConVar("l4d_machine_dropping_time", 		"0.5", 		"Deployment time for turret in seconds.", FCVAR_NOTIFY, true, 0.5, true, 3.0 );
+        hCvar_MachineHintTime                   = CreateConVar("l4d_machine_hint_time",                 "5.0",          "Duration in seconds to show turret placement hints.", FCVAR_NOTIFY, true, 1.0, true, 15.0 );
 //	hCvar_ = CreateConVar("l4d_machine_", "1", "", FCVAR_NOTIFY, true, 0.0, true, 1.0 );
 
  	AutoExecConfig( true, "l4d_machine_multi" );
@@ -525,7 +525,6 @@ public void OnPluginStart()
 	hCvar_MachineSpecialAdminOnly.AddChangeHook( ConVarChange );
 	hCvar_MachineSpecialAllowed.AddChangeHook( ConVarChange );
 	
-	hCvar_MachineUsageMessage.AddChangeHook( ConVarChange );
 	hCvar_MachineAmmoCount.AddChangeHook( ConVarChange );
 	hCvar_MachineAmmoType.AddChangeHook( ConVarChange );
 	hCvar_MachineAmmoReload.AddChangeHook( ConVarChange );
@@ -614,7 +613,6 @@ void GetConVar()
 
 	iCvar_GameModesToggle = hCvar_Machine_GameModesToggle.IntValue;
 	iCvar_MachineMaxAllowed = hCvar_MachineMaxAllowed.IntValue;
-	iCvar_MachineUsageMessage = hCvar_MachineUsageMessage.IntValue;	
 	iCvar_MachineAmmoCount = hCvar_MachineAmmoCount.IntValue;
 	iCvar_MachineAmmoCountGatling = hCvar_MachineAmmoCountGatling.IntValue;	
 	iCvar_MachineAmmoType = hCvar_MachineAmmoType.IntValue;
@@ -804,7 +802,6 @@ void ResetAllState()
 	for(int i = 1; i <= MaxClients; i++)
 	{
 		GunState[i] = State_None;
-		ShowMsg[i] = 0;
 		GunOwner[i] = 0;
 		GunCarrier[i] = 0; 
 		Gun[i] = 0;
@@ -1598,28 +1595,35 @@ public Action ShowInfo( Handle hTimer, DataPack hPack )
 }
 
 void DisplayHint( int client, int entity )
-{	
-	ClientCommand( client, "gameinstructor_enable 1");
-	
-	DataPack hPack = new DataPack();
-	hPack.WriteCell( GetClientUserId( client ) );
-	hPack.WriteCell( EntIndexToEntRef( entity ) );
-	
-	CreateTimer( 1.0, DelayDisplayHint, hPack, TIMER_FLAG_NO_MAPCHANGE ); 
+{
+        bool bToggle = !GetConVarBool( hCvar_GameInstructor );
+        if( bToggle )
+                ClientCommand( client, "gameinstructor_enable 1" );
+
+        DataPack hPack = new DataPack();
+        hPack.WriteCell( GetClientUserId( client ) );
+        hPack.WriteCell( EntIndexToEntRef( entity ) );
+        hPack.WriteCell( bToggle );
+
+        CreateTimer( 1.0, DelayDisplayHint, hPack, TIMER_FLAG_NO_MAPCHANGE );
 }
 
 public Action DelayDisplayHint( Handle hTimer, DataPack hPack )
 {
-	hPack.Reset( false );
-	int client = GetClientOfUserId( hPack.ReadCell() );
-	int iEntity = EntRefToEntIndex( hPack.ReadCell() );
-	CloseHandle( hPack );
-	
-	char sMessage[256];
-	Format( sMessage, sizeof sMessage, "%T", "Use Instructor", client );
-	RemoveColorCodes( sMessage, sizeof sMessage );
-	DisplayInstructorHint( client, sMessage, "icon_interact", GetColorIndex( GetMachineGunColor( iEntity ) ) );
-	return Plugin_Continue;	
+        hPack.Reset( false );
+        int client = GetClientOfUserId( hPack.ReadCell() );
+        int iEntity = EntRefToEntIndex( hPack.ReadCell() );
+        bool bToggle = view_as<bool>( hPack.ReadCell() );
+        CloseHandle( hPack );
+
+        char sPlace[128], sRotate[128], sRemove[128], sMessage[256];
+        Format( sPlace, sizeof sPlace, "%T", "Turret Place Hint", client );
+        Format( sRotate, sizeof sRotate, "%T", "Turret Rotate Hint", client );
+        Format( sRemove, sizeof sRemove, "%T", "Turret Remove Hint", client );
+        Format( sMessage, sizeof sMessage, "%s \n%s \n%s", sPlace, sRotate, sRemove );
+        RemoveColorCodes( sMessage, sizeof sMessage );
+        DisplayInstructorHint( client, sMessage, "icon_interact", GetColorIndex( GetMachineGunColor( iEntity ) ), bToggle );
+        return Plugin_Continue;
 }
 
 int GetMachineGunColor( int entity ) 
@@ -1639,7 +1643,7 @@ int GetMachineGunColor( int entity )
 	return iColorIndex;
 }
 
-public void DisplayInstructorHint( int client, char sMessage[256], const char[] sHintIcon, const char[] sColor )
+public void DisplayInstructorHint( int client, char sMessage[256], const char[] sHintIcon, const char[] sColor, bool bToggle )
 { 
 	char sTargetName[32];
 	
@@ -1655,7 +1659,10 @@ public void DisplayInstructorHint( int client, char sMessage[256], const char[] 
 	
 	DispatchKeyValue(client, "targetname", sTargetName);
 	DispatchKeyValue(iEntity, "hint_target", sTargetName);
-	DispatchKeyValue(iEntity, "hint_timeout", "5");
+        float flHintTime = GetConVarFloat( hCvar_MachineHintTime );
+        char sTime[8];
+        FloatToString( flHintTime, sTime, sizeof sTime );
+        DispatchKeyValue(iEntity, "hint_timeout", sTime);
 	DispatchKeyValue(iEntity, "hint_range", "0.01");
 	DispatchKeyValue(iEntity, "hint_color", sColor);
 	DispatchKeyValue(iEntity, "hint_icon_onscreen", sHintIcon);
@@ -1664,29 +1671,33 @@ public void DisplayInstructorHint( int client, char sMessage[256], const char[] 
 	DispatchSpawn(iEntity);
 	AcceptEntityInput(iEntity, "ShowHint");
 	
-	DataPack hPack = new DataPack();
-	hPack.WriteCell( GetClientUserId( client ) );
-	hPack.WriteCell( EntIndexToEntRef( iEntity ) );
-	
-	CreateTimer( 5.0, RemoveInstructorHint, hPack, TIMER_FLAG_NO_MAPCHANGE );
+        DataPack hPack = new DataPack();
+        hPack.WriteCell( GetClientUserId( client ) );
+        hPack.WriteCell( EntIndexToEntRef( iEntity ) );
+        hPack.WriteCell( bToggle );
+
+        CreateTimer( flHintTime, RemoveInstructorHint, hPack, TIMER_FLAG_NO_MAPCHANGE );
 }
 
 public Action RemoveInstructorHint( Handle hTimer, DataPack hPack )
-{	
-	hPack.Reset( false );
-	int client = GetClientOfUserId( hPack.ReadCell() );
-	int iEntity = EntRefToEntIndex( hPack.ReadCell() );
-	CloseHandle( hPack );
+{
+        hPack.Reset( false );
+        int client = GetClientOfUserId( hPack.ReadCell() );
+        int iEntity = EntRefToEntIndex( hPack.ReadCell() );
+        bool bToggle = view_as<bool>( hPack.ReadCell() );
+        CloseHandle( hPack );
 	
 	if( !IsClientPlaying( client ) )
 		return Plugin_Stop;
 
-	if( IsValidEntity( iEntity ) )
-		RemoveEdict( iEntity );
-	
-	ClientCommand( client, "gameinstructor_enable 0" );
-	DispatchKeyValue( client, "targetname", "" );
-	return Plugin_Continue;
+        if( IsValidEntity( iEntity ) )
+                RemoveEdict( iEntity );
+
+        if( bToggle )
+                ClientCommand( client, "gameinstructor_enable 0" );
+
+        DispatchKeyValue( client, "targetname", "" );
+        return Plugin_Continue;
 }
 
 stock int PrecacheParticle( const char[] sEffectName )
@@ -2045,15 +2056,11 @@ void CreateMachine( int client, int iMachineGunModel, int iSpecialType = NULL )
 		if( MachineCount == 0 )
 			ScanEnemys();
 
-		if( ShowMsg[client] < iCvar_MachineUsageMessage )
-		{
-			ShowMsg[client]++;
-			DataPack hPack = new DataPack();
-			hPack.WriteCell( GetClientUserId( client ) );
-			hPack.WriteCell( EntIndexToEntRef( iEntity ) );
-			
-			CreateTimer( 1.0, ShowInfo, hPack, TIMER_FLAG_NO_MAPCHANGE );
-		}
+                DataPack hPack = new DataPack();
+                hPack.WriteCell( GetClientUserId( client ) );
+                hPack.WriteCell( EntIndexToEntRef( iEntity ) );
+
+                CreateTimer( 1.0, ShowInfo, hPack, TIMER_FLAG_NO_MAPCHANGE );
 
                MachineCount++;
                ShowMachineCount( client );

@@ -76,6 +76,18 @@
 	{
 		"en"		"Use Instructor"
 	}
+	"Turret Place Hint"
+	{
+		"en"			"Press USE to place the turret"
+	}
+	"Turret Rotate Hint"
+	{
+		"en"			"Press RELOAD to rotate the turret"
+	}
+	"Turret Remove Hint"
+	{
+		"en"			"Press SHOVE while crouched to remove the turret"
+	}
 	"No Access"
 	{
 		"en"		"No access to this"
