@@ -572,14 +572,15 @@ public void OnPluginStart()
 	} else {
 		g_iClassID = -1;
 	}
-	if (g_iClassID < 0) { 
-		RegAdminCmd( "sm_machine", CMD_SpawnMachine, ADMFLAG_ROOT, "Creates a machine gun in front of the player." );
-		RegConsoleCmd( "sm_removemachine", CMD_RemoveMachine, "Removes the machine gun in the crosshairs." );
-		RegAdminCmd( "sm_machinemenu", CMD_MainMenu, ADMFLAG_ROOT, "Open the turret menu (only in-game)");
-		RegAdminCmd( "sm_resetmachine", Cmd_ResetMachine, ADMFLAG_ROOT, "reloads the settings and removes all the spawned turrets" );
-	}
-	ResetAllState();
-	GetConVar();
+       if (g_iClassID < 0) {
+               RegAdminCmd( "sm_machine", CMD_SpawnMachine, ADMFLAG_ROOT, "Creates a machine gun in front of the player." );
+               RegConsoleCmd( "sm_removemachine", CMD_RemoveMachine, "Removes the machine gun in the crosshairs." );
+               RegAdminCmd( "sm_machinemenu", CMD_MainMenu, ADMFLAG_ROOT, "Open the turret menu (only in-game)");
+               RegAdminCmd( "sm_resetmachine", Cmd_ResetMachine, ADMFLAG_ROOT, "reloads the settings and removes all the spawned turrets" );
+       }
+       RegConsoleCmd( "sm_turret", CMD_MainMenu, "Open the turret menu" );
+       ResetAllState();
+       GetConVar();
 }
 
 public void ConVarChange( ConVar hConVar, const char[] sOldValue, const char[] sNewValue )
@@ -1270,11 +1271,12 @@ void BuildMachineGunsMainMenu( int client )
 		return;
 	}
 
-	static char sBasicMchineGuns[128];
-	static char sAdvancedMachineGuns[128];
-	static char sRemoveMachineGun[128];
+       static char sBasicMchineGuns[128];
+       static char sAdvancedMachineGuns[128];
+       static char sRemoveMachineGun[128];
+       static char sDesc[128];
 
-	static char sTitle[128];
+       static char sTitle[128];
 	
 	Menu hMenu = new Menu( MenuHandler );
 	hMenu.ExitBackButton = false;
@@ -1284,18 +1286,28 @@ void BuildMachineGunsMainMenu( int client )
 		Format( sBasicMchineGuns, sizeof sBasicMchineGuns, "%T", "Basic Menu", client);
 		Format( sBasicMchineGuns, sizeof sBasicMchineGuns, "%s (%d/%d)",sBasicMchineGuns, countGatlingGuns(client), iCvar_MachineLimitGatling );
 
-		if( AllowAccess( client, sCvar_MachineBasicAdminOnly ) )
-			hMenu.AddItem( "BasicMachineGuns", sBasicMchineGuns );
-	}
-	if (hasBuildsLeftFor50cal(client)) {
+               if( AllowAccess( client, sCvar_MachineBasicAdminOnly ) )
+               {
+                       hMenu.AddItem( "BasicMachineGuns", sBasicMchineGuns );
+                       Format( sDesc, sizeof sDesc, "%T", "Basic Menu Description", client );
+                       hMenu.AddItem( "", sDesc, ITEMDRAW_DISABLED );
+               }
+       }
+       if (hasBuildsLeftFor50cal(client)) {
 	
 		Format( sAdvancedMachineGuns, sizeof sAdvancedMachineGuns, "%T", "Advanced Menu", client);
 		Format( sAdvancedMachineGuns, sizeof sAdvancedMachineGuns, "%s (%d/%d)", sAdvancedMachineGuns, count50calGuns(client), iCvar_MachineLimit);		
-		if( AllowAccess( client, sCvar_MachineSpecialAdminOnly ) )
-			hMenu.AddItem( "AdvancedMachineGuns", sAdvancedMachineGuns );
-	}
-	Format( sRemoveMachineGun, sizeof sRemoveMachineGun, "%T", "Remove Turret", client);
-	hMenu.AddItem("RemoveMachineGun", sRemoveMachineGun );
+               if( AllowAccess( client, sCvar_MachineSpecialAdminOnly ) )
+               {
+                       hMenu.AddItem( "AdvancedMachineGuns", sAdvancedMachineGuns );
+                       Format( sDesc, sizeof sDesc, "%T", "Advanced Menu Description", client );
+                       hMenu.AddItem( "", sDesc, ITEMDRAW_DISABLED );
+               }
+       }
+       Format( sRemoveMachineGun, sizeof sRemoveMachineGun, "%T", "Remove Turret", client);
+       hMenu.AddItem("RemoveMachineGun", sRemoveMachineGun );
+       Format( sDesc, sizeof sDesc, "%T", "Remove Turret Description", client );
+       hMenu.AddItem( "", sDesc, ITEMDRAW_DISABLED );
 
 	Format( sTitle, sizeof sTitle, "%T", "Main Menu Title", client );
 	hMenu.SetTitle( sTitle );
@@ -1375,39 +1387,64 @@ public int MenuHandler( Menu hMenu, MenuAction hAction, int Param1, int Param2 )
 
 void BuildBasicMachineGunsMenu( int client )
 {
-	static char sTitle[128];
-	static char sBuffer[128];
-	Menu hMenu = new Menu( MenuHandler_BasicMachineGuns );
-	Format( sBuffer, sizeof sBuffer, "%T", "Gatling Basic Machine Gun", client );
-	if( bBasicAllowed )
-		hMenu.AddItem( "GatlingMachineGun", sBuffer );
+       static char sTitle[128];
+       static char sBuffer[128];
+       static char sDesc[128];
+       Menu hMenu = new Menu( MenuHandler_BasicMachineGuns );
+       Format( sBuffer, sizeof sBuffer, "%T", "Gatling Basic Machine Gun", client );
+       Format( sDesc, sizeof sDesc, "%T", "Gatling Basic Machine Gun Desc", client );
+       if( bBasicAllowed )
+       {
+               hMenu.AddItem( "GatlingMachineGun", sBuffer );
+               hMenu.AddItem( "", sDesc, ITEMDRAW_DISABLED );
+       }
 
-	Format( sBuffer, sizeof sBuffer, "%T", "Gatling Fire-Type", client );
-	if( bFlameAllowed )
-		hMenu.AddItem( "GATLING_FIRE", sBuffer );
-	
-	Format( sBuffer, sizeof sBuffer, "%T", "Gatling Laser-Type", client );
-	if( bLaserAllowed )
-		hMenu.AddItem( "GATLING_LASER", sBuffer );
-	
-	Format( sBuffer, sizeof sBuffer, "%T", "Gatling Tesla-Type", client );
-	if( bTeslaAllowed )
-		hMenu.AddItem( "GATLING_TESLA", sBuffer );
-	
-	Format( sBuffer, sizeof sBuffer, "%T", "Gatling Freeze-Type", client );
-	if( bFreezeAllowed )
-		hMenu.AddItem( "GATLING_FREEZE", sBuffer );
-	
-	Format( sBuffer, sizeof sBuffer, "%T", "Gatling Nauseating-Type", client );
-	if( bNauseatingAllowed )
-		hMenu.AddItem( "GATLING_NAUSEATING", sBuffer );
-	
-	Format( sTitle, sizeof sTitle, "%T", "Secondary Menu Basic Machine Guns", client );
-	hMenu.SetTitle( sTitle );
-	hMenu.ExitBackButton = true;
-	hMenu.ExitButton = true;
-	
-	hMenu.Display( client, MENU_TIME_FOREVER );
+       Format( sBuffer, sizeof sBuffer, "%T", "Gatling Fire-Type", client );
+       Format( sDesc, sizeof sDesc, "%T", "Gatling Fire-Type Desc", client );
+       if( bFlameAllowed )
+       {
+               hMenu.AddItem( "GATLING_FIRE", sBuffer );
+               hMenu.AddItem( "", sDesc, ITEMDRAW_DISABLED );
+       }
+
+       Format( sBuffer, sizeof sBuffer, "%T", "Gatling Laser-Type", client );
+       Format( sDesc, sizeof sDesc, "%T", "Gatling Laser-Type Desc", client );
+       if( bLaserAllowed )
+       {
+               hMenu.AddItem( "GATLING_LASER", sBuffer );
+               hMenu.AddItem( "", sDesc, ITEMDRAW_DISABLED );
+       }
+
+       Format( sBuffer, sizeof sBuffer, "%T", "Gatling Tesla-Type", client );
+       Format( sDesc, sizeof sDesc, "%T", "Gatling Tesla-Type Desc", client );
+       if( bTeslaAllowed )
+       {
+               hMenu.AddItem( "GATLING_TESLA", sBuffer );
+               hMenu.AddItem( "", sDesc, ITEMDRAW_DISABLED );
+       }
+
+       Format( sBuffer, sizeof sBuffer, "%T", "Gatling Freeze-Type", client );
+       Format( sDesc, sizeof sDesc, "%T", "Gatling Freeze-Type Desc", client );
+       if( bFreezeAllowed )
+       {
+               hMenu.AddItem( "GATLING_FREEZE", sBuffer );
+               hMenu.AddItem( "", sDesc, ITEMDRAW_DISABLED );
+       }
+
+       Format( sBuffer, sizeof sBuffer, "%T", "Gatling Nauseating-Type", client );
+       Format( sDesc, sizeof sDesc, "%T", "Gatling Nauseating-Type Desc", client );
+       if( bNauseatingAllowed )
+       {
+               hMenu.AddItem( "GATLING_NAUSEATING", sBuffer );
+               hMenu.AddItem( "", sDesc, ITEMDRAW_DISABLED );
+       }
+
+       Format( sTitle, sizeof sTitle, "%T", "Secondary Menu Basic Machine Guns", client );
+       hMenu.SetTitle( sTitle );
+       hMenu.ExitBackButton = true;
+       hMenu.ExitButton = true;
+
+       hMenu.Display( client, MENU_TIME_FOREVER );
 }
 
 public int MenuHandler_BasicMachineGuns( Menu hMenu, MenuAction hAction, int Param1, int Param2 )
@@ -1461,41 +1498,66 @@ public int MenuHandler_BasicMachineGuns( Menu hMenu, MenuAction hAction, int Par
 
 void BuildAdvancedMachineGunsMenu( int client )
 {
-	static char sTitle[128];
-	static char sBuffer[128];
-	
-	Menu hMenu = new Menu( MenuHandler_AdvancedMachineGuns );
+       static char sTitle[128];
+       static char sBuffer[128];
+       static char sDesc[128];
 
-	Format( sBuffer, sizeof sBuffer, "%T", "50 Cal Normal", client );
-	if( bBasicAllowed )
-		hMenu.AddItem( "50 Cal Normal", sBuffer );
-	
-	Format( sBuffer, sizeof sBuffer, "%T", "50 Cal Fire-Type", client );
-	if( bFlameAllowed )
-		hMenu.AddItem( "50CAL_FIRE", sBuffer );
-	
-	Format( sBuffer, sizeof sBuffer, "%T", "50 Cal Laser-Type", client );
-	if( bLaserAllowed )
-		hMenu.AddItem( "50CAL_LASER", sBuffer );
-	
-	Format( sBuffer, sizeof sBuffer, "%T", "50 Cal Tesla-Type", client );
-	if( bTeslaAllowed )
-		hMenu.AddItem( "50CAL_TESLA", sBuffer );
-	
-	Format( sBuffer, sizeof sBuffer, "%T", "50 Cal Freeze-Type", client );
-	if( bFreezeAllowed )
-		hMenu.AddItem( "50CAL_FREEZE", sBuffer );
-	
-	Format( sBuffer, sizeof sBuffer, "%T", "Cal 50 Nauseating-Type", client );
-	if( bNauseatingAllowed )
-		hMenu.AddItem( "50CAL_NAUSEATING", sBuffer );
-	
-	Format( sTitle, sizeof sTitle, "%T", "Secondary Menu Advanced Machine Gun", client );
-	hMenu.SetTitle( sTitle );
-	hMenu.ExitBackButton = true;
-	hMenu.ExitButton = true;
-	
-	hMenu.Display( client, MENU_TIME_FOREVER );
+       Menu hMenu = new Menu( MenuHandler_AdvancedMachineGuns );
+
+       Format( sBuffer, sizeof sBuffer, "%T", "50 Cal Normal", client );
+       Format( sDesc, sizeof sDesc, "%T", "50 Cal Normal Desc", client );
+       if( bBasicAllowed )
+       {
+               hMenu.AddItem( "50 Cal Normal", sBuffer );
+               hMenu.AddItem( "", sDesc, ITEMDRAW_DISABLED );
+       }
+
+       Format( sBuffer, sizeof sBuffer, "%T", "50 Cal Fire-Type", client );
+       Format( sDesc, sizeof sDesc, "%T", "50 Cal Fire-Type Desc", client );
+       if( bFlameAllowed )
+       {
+               hMenu.AddItem( "50CAL_FIRE", sBuffer );
+               hMenu.AddItem( "", sDesc, ITEMDRAW_DISABLED );
+       }
+
+       Format( sBuffer, sizeof sBuffer, "%T", "50 Cal Laser-Type", client );
+       Format( sDesc, sizeof sDesc, "%T", "50 Cal Laser-Type Desc", client );
+       if( bLaserAllowed )
+       {
+               hMenu.AddItem( "50CAL_LASER", sBuffer );
+               hMenu.AddItem( "", sDesc, ITEMDRAW_DISABLED );
+       }
+
+       Format( sBuffer, sizeof sBuffer, "%T", "50 Cal Tesla-Type", client );
+       Format( sDesc, sizeof sDesc, "%T", "50 Cal Tesla-Type Desc", client );
+       if( bTeslaAllowed )
+       {
+               hMenu.AddItem( "50CAL_TESLA", sBuffer );
+               hMenu.AddItem( "", sDesc, ITEMDRAW_DISABLED );
+       }
+
+       Format( sBuffer, sizeof sBuffer, "%T", "50 Cal Freeze-Type", client );
+       Format( sDesc, sizeof sDesc, "%T", "50 Cal Freeze-Type Desc", client );
+       if( bFreezeAllowed )
+       {
+               hMenu.AddItem( "50CAL_FREEZE", sBuffer );
+               hMenu.AddItem( "", sDesc, ITEMDRAW_DISABLED );
+       }
+
+       Format( sBuffer, sizeof sBuffer, "%T", "Cal 50 Nauseating-Type", client );
+       Format( sDesc, sizeof sDesc, "%T", "Cal 50 Nauseating-Type Desc", client );
+       if( bNauseatingAllowed )
+       {
+               hMenu.AddItem( "50CAL_NAUSEATING", sBuffer );
+               hMenu.AddItem( "", sDesc, ITEMDRAW_DISABLED );
+       }
+
+       Format( sTitle, sizeof sTitle, "%T", "Secondary Menu Advanced Machine Gun", client );
+       hMenu.SetTitle( sTitle );
+       hMenu.ExitBackButton = true;
+       hMenu.ExitButton = true;
+
+       hMenu.Display( client, MENU_TIME_FOREVER );
 }
 
 public int MenuHandler_AdvancedMachineGuns( Menu hMenu, MenuAction hAction, int Param1, int Param2 )
