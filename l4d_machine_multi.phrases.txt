@@ -120,6 +120,10 @@
 	{
 		"en"		"You can only deploy maximum %d turrets!"
 	}
+	"Machine Gun Count"
+	{
+		"en"		"Turrets deployed: %d/%d"
+	}
 	"Machine Gun Active State" 
 	{
 		"en"		"Turret woke up!"
